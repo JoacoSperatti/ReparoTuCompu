@@ -1,0 +1,117 @@
+.warranty-hero {
+  padding: 4rem 0 3rem 0;
+  background-color: var(--color-bg-base);
+}
+
+.warranty-subtitle {
+  font-size: 1.125rem;
+  color: var(--color-text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.warranty-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.warranty-card {
+  padding: 3rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  transition: var(--transition);
+}
+
+.warranty-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.primary-card {
+  background-color: var(--color-bg-base);
+  border-top: 4px solid var(--color-primary);
+}
+
+.secondary-card {
+  background-color: var(--color-bg-alt);
+  border-top: 4px solid var(--color-text-muted);
+}
+
+.warranty-icon {
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+}
+
+.secondary-card .warranty-icon {
+  color: var(--color-text-muted);
+}
+
+.warranty-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.warranty-card p {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.warranty-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.warranty-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.warranty-list li svg {
+  color: var(--color-success);
+}
+
+.warranty-terms {
+  background-color: var(--color-bg-base);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+}
+
+.warranty-terms h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.warranty-terms p {
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.warranty-terms ul {
+  padding-left: 1.5rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pb-5 {
+  padding-bottom: 5rem;
+}
+
+@media (max-width: 768px) {
+  .warranty-grid {
+    grid-template-columns: 1fr;
+  }
+  .warranty-card {
+    padding: 2rem;
+  }
+}
