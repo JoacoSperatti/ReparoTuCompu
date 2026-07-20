@@ -232,7 +232,7 @@ const Admin = () => {
       estimatedDelivery: tickDelivery,
       description: tickDesc,
       currentStep: Number(tickStep),
-      priceEstimate: "Sujeto a diagnóstico final",
+      priceEstimate: editingTicket ? editingTicket.priceEstimate : "Sujeto a diagnóstico final",
       statusNotes: tickNotes,
       history: formattedHistory
     };

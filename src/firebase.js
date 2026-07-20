@@ -8,16 +8,16 @@ import {
   deleteDoc, 
   collection 
 } from "firebase/firestore";
-import { INITIAL_PRODUCTS, INITIAL_TICKETS } from "./data/initialData";
+import { INITIAL_TICKETS } from "./data/initialData";
 
-// Configuración real de Firebase para el proyecto Reparo Tu Compu
+// Configuración de Firebase para el proyecto Reparo Tu Compu usando variables de entorno
 const firebaseConfig = {
-  apiKey: "AIzaSyDzSknvroKdtHJaomKULhsjp3td_c0K06o",
-  authDomain: "reparotucompu-632ab.firebaseapp.com",
-  projectId: "reparotucompu-632ab",
-  storageBucket: "reparotucompu-632ab.firebasestorage.app",
-  messagingSenderId: "152258978747",
-  appId: "1:152258978747:web:7fa3054c20b2e753e49a9e"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 let db = null;
@@ -52,15 +52,6 @@ export const getDbProducts = async () => {
         productsList.push({ id: doc.id, ...doc.data() });
       });
       
-      // If collection is empty, populate it with initial data
-      if (productsList.length === 0) {
-        console.log("🔥 Firestore products empty. Populating initial products...");
-        for (const prod of INITIAL_PRODUCTS) {
-          const { id, ...data } = prod;
-          await setDoc(doc(db, "products", String(id)), data);
-          productsList.push(prod);
-        }
-      }
       // Sort by ID or creation to maintain order
       return productsList.sort((a, b) => Number(a.id) - Number(b.id));
     } catch (error) {
@@ -71,8 +62,8 @@ export const getDbProducts = async () => {
   // LocalStorage Fallback
   const saved = localStorage.getItem("rtc_products");
   if (saved) return JSON.parse(saved);
-  localStorage.setItem("rtc_products", JSON.stringify(INITIAL_PRODUCTS));
-  return INITIAL_PRODUCTS;
+  localStorage.setItem("rtc_products", JSON.stringify([]));
+  return [];
 };
 
 export const saveDbProduct = async (product) => {
@@ -90,7 +81,7 @@ export const saveDbProduct = async (product) => {
 
   // LocalStorage Fallback
   const saved = localStorage.getItem("rtc_products");
-  const products = saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+  const products = saved ? JSON.parse(saved) : [];
   const exists = products.some(p => String(p.id) === strId);
   
   let updated;
