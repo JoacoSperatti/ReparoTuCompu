@@ -12,7 +12,11 @@ import {
   Wrench, 
   Save, 
   X, 
-  Clock
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
 import { CONFIG } from '../config';
 import { 
@@ -47,6 +51,54 @@ const Admin = () => {
   });
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+
+  // Custom Alerts / Confirms state
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'alert', // 'alert' | 'confirm'
+    variant: 'info', // 'info' | 'success' | 'danger' | 'warning'
+    title: '',
+    message: '',
+    onConfirm: null,
+    onCancel: null
+  });
+
+  const showAlert = (title, message, variant = 'info') => {
+    return new Promise((resolve) => {
+      setModalConfig({
+        isOpen: true,
+        type: 'alert',
+        variant,
+        title,
+        message,
+        onConfirm: () => {
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: null
+      });
+    });
+  };
+
+  const showConfirm = (title, message, variant = 'warning') => {
+    return new Promise((resolve) => {
+      setModalConfig({
+        isOpen: true,
+        type: 'confirm',
+        variant,
+        title,
+        message,
+        onConfirm: () => {
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: () => {
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
+          resolve(false);
+        }
+      });
+    });
+  };
 
   // Active Tab: 'store' or 'tracking'
   const [activeTab, setActiveTab] = useState('store');
@@ -167,12 +219,23 @@ const Admin = () => {
     
     setIsProductFormOpen(false);
     await saveDbProduct(productData);
+    showAlert(
+      editingProduct ? 'Producto actualizado' : 'Producto creado',
+      `El producto "${prodName}" se guardó con éxito en la tienda.`,
+      'success'
+    );
   };
 
   const handleDeleteProduct = async (id) => {
-    if (window.confirm('¿Estás seguro de que querés eliminar este producto?')) {
+    const confirmed = await showConfirm(
+      '¿Eliminar producto?',
+      'Esta acción no se puede deshacer. ¿Estás seguro de que querés eliminar este producto?',
+      'danger'
+    );
+    if (confirmed) {
       setProducts(products.filter(p => p.id !== id));
       await deleteDbProduct(id);
+      showAlert('Producto eliminado', 'El producto fue eliminado exitosamente.', 'success');
     }
   };
 
@@ -240,14 +303,25 @@ const Admin = () => {
     setTickets({ ...tickets, [cleanId]: updatedTicket });
     setIsTicketFormOpen(false);
     await saveDbTicket(updatedTicket);
+    showAlert(
+      editingTicket ? 'Ticket actualizado' : 'Ticket creado',
+      `El ticket de reparación ${cleanId} fue guardado correctamente.`,
+      'success'
+    );
   };
 
   const handleDeleteTicket = async (id) => {
-    if (window.confirm(`¿Estás seguro de que querés eliminar el ticket ${id}?`)) {
+    const confirmed = await showConfirm(
+      '¿Eliminar ticket?',
+      `Esta acción no se puede deshacer. ¿Estás seguro de que querés eliminar el ticket ${id}?`,
+      'danger'
+    );
+    if (confirmed) {
       const updated = { ...tickets };
       delete updated[id];
       setTickets(updated);
       await deleteDbTicket(id);
+      showAlert('Ticket eliminado', `El ticket ${id} fue eliminado correctamente.`, 'success');
     }
   };
 
@@ -680,6 +754,57 @@ const Admin = () => {
 
         </div>
       )}
+
+      {/* CUSTOM DIALOG / CONFIRM MODAL */}
+      <AnimatePresence>
+        {modalConfig.isOpen && (
+          <div className="custom-modal-overlay">
+            <motion.div 
+              className="custom-modal-card"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            >
+              <div className={`custom-modal-icon ${modalConfig.variant}`}>
+                {modalConfig.variant === 'success' && <CheckCircle2 size={32} />}
+                {modalConfig.variant === 'danger' && <AlertCircle size={32} />}
+                {modalConfig.variant === 'warning' && <AlertTriangle size={32} />}
+                {modalConfig.variant === 'info' && <HelpCircle size={32} />}
+              </div>
+              
+              <h3 className="custom-modal-title">{modalConfig.title}</h3>
+              <p className="custom-modal-message">{modalConfig.message}</p>
+              
+              <div className="custom-modal-actions">
+                {modalConfig.type === 'confirm' ? (
+                  <>
+                    <button 
+                      onClick={modalConfig.onCancel} 
+                      className="btn btn-outline custom-modal-btn cancel-btn"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={modalConfig.onConfirm} 
+                      className={`btn custom-modal-btn confirm-btn ${modalConfig.variant === 'danger' ? 'btn-danger' : 'btn-primary'}`}
+                    >
+                      Confirmar
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={modalConfig.onConfirm} 
+                    className="btn btn-primary custom-modal-btn"
+                  >
+                    Aceptar
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

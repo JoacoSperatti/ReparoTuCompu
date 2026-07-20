@@ -19,7 +19,7 @@ function App() {
           <Route path="garantias" element={<Warranty />} />
           <Route path="servicios" element={<Services />} />
           <Route path="seguimiento" element={<Tracking />} />
-          <Route path="panel-control-secreto" element={<Admin />} />
+          <Route path="gestion-interna" element={<Admin />} />
         </Route>
       </Routes>
     </Router>
