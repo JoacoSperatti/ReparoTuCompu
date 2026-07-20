@@ -4,33 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Wrench, Cpu, RefreshCw, MonitorSmartphone, Star, MessageSquare, CheckCircle2, ChevronDown } from 'lucide-react';
 import './Home.css';
+import { getDbTestimonials, saveDbTestimonial } from '../firebase';
 
-const DEFAULT_TESTIMONIALS = [
-  {
-    id: 1,
-    name: "Diego Fernández",
-    service: "Reparación de Notebook HP",
-    rating: 5,
-    comment: "Excelente servicio técnico. Diagnosticaron la falla de cortocircuito en placa en 24 horas y me la entregaron funcionando perfecta. Muy honestos con el precio.",
-    date: "14/07/2026"
-  },
-  {
-    id: 2,
-    name: "Valeria Rossi",
-    service: "Armado PC de Diseño",
-    rating: 5,
-    comment: "El asesoramiento para armar mi PC de trabajo fue impecable. Eligieron componentes de gran calidad respetando mi presupuesto. La gestión de cables es un arte.",
-    date: "08/07/2026"
-  },
-  {
-    id: 3,
-    name: "Martín Benítez",
-    service: "Plan Canje de Equipo",
-    rating: 5,
-    comment: "Entregué mi vieja PC de escritorio en parte de pago y me llevé una notebook increíble. Tasaron mi equipo de forma justa y el trámite fue súper ágil. Muy recomendados.",
-    date: "28/06/2026"
-  }
-];
+
 
 const FAQ_ITEMS = [
   {
@@ -57,10 +33,7 @@ const FAQ_ITEMS = [
 
 const Home = () => {
   // Load testimonials from localStorage or use defaults
-  const [testimonials, setTestimonials] = useState(() => {
-    const saved = localStorage.getItem('rtc_testimonials');
-    return saved ? JSON.parse(saved) : DEFAULT_TESTIMONIALS;
-  });
+  const [testimonials, setTestimonials] = useState([]);
 
   // Accordion FAQ state
   const [activeFaq, setActiveFaq] = useState(null);
@@ -73,16 +46,20 @@ const Home = () => {
   const [ratingHover, setRatingHover] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  // Sync to localStorage
+  // Load testimonials from database on mount
   useEffect(() => {
-    localStorage.setItem('rtc_testimonials', JSON.stringify(testimonials));
-  }, [testimonials]);
+    const fetchTestimonials = async () => {
+      const data = await getDbTestimonials();
+      setTestimonials(data);
+    };
+    fetchTestimonials();
+  }, []);
 
   const toggleFaq = (index) => {
     setActiveFaq(activeFaq === index ? null : index);
   };
 
-  const handleAddTestimonial = (e) => {
+  const handleAddTestimonial = async (e) => {
     e.preventDefault();
     if (!newName.trim() || !newComment.trim() || !newService.trim()) return;
 
@@ -92,11 +69,17 @@ const Home = () => {
       service: newService,
       rating: newRating,
       comment: newComment,
-      date: new Date().toLocaleDateString('es-AR')
+      date: new Date().toLocaleDateString('es-AR'),
+      visible: true,
+      position: 9999
     };
 
+    // Prepend locally for immediate UX feedback
     setTestimonials([newReview, ...testimonials]);
     setFormSubmitted(true);
+
+    // Save to Firebase or LocalStorage
+    await saveDbTestimonial(newReview);
     
     // Reset form fields
     setNewName('');
@@ -296,7 +279,7 @@ const Home = () => {
             <div className="testimonials-list-side">
               <div className="testimonials-scroll-box">
                 <AnimatePresence initial={false}>
-                  {testimonials.map((t) => (
+                  {testimonials.filter(t => t.visible !== false).map((t) => (
                     <motion.div 
                       key={t.id}
                       className="testimonial-item-card"

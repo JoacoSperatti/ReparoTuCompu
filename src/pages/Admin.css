@@ -569,3 +569,10 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+
+/* Custom Styles for Testimonials Management */
+.admin-pos-input:focus {
+  border-color: var(--color-primary) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}

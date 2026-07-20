@@ -16,7 +16,11 @@ import {
   AlertCircle,
   CheckCircle2,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  MessageSquare,
+  Eye,
+  EyeOff,
+  Star
 } from 'lucide-react';
 import { CONFIG } from '../config';
 import { 
@@ -26,6 +30,9 @@ import {
   getDbTickets, 
   saveDbTicket, 
   deleteDbTicket, 
+  getDbTestimonials,
+  saveDbTestimonial,
+  deleteDbTestimonial,
   isFirebaseConfigured 
 } from '../firebase';
 import './Admin.css';
@@ -100,12 +107,13 @@ const Admin = () => {
     });
   };
 
-  // Active Tab: 'store' or 'tracking'
+  // Active Tab: 'store', 'tracking' or 'testimonials'
   const [activeTab, setActiveTab] = useState('store');
 
-  // Load products & tickets from database/localStorage
+  // Load products, tickets & testimonials from database/localStorage
   const [products, setProducts] = useState([]);
   const [tickets, setTickets] = useState({});
+  const [testimonials, setTestimonials] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Load data upon mounting if authenticated
@@ -116,8 +124,10 @@ const Admin = () => {
       try {
         const prodData = await getDbProducts();
         const tickData = await getDbTickets();
+        const testData = await getDbTestimonials();
         setProducts(prodData);
         setTickets(tickData);
+        setTestimonials(testData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -151,6 +161,17 @@ const Admin = () => {
   const [tickStep, setTickStep] = useState(1);
   const [tickNotes, setTickNotes] = useState('');
   const [newHistoryLabel, setNewHistoryLabel] = useState('');
+
+  // Editor states (Testimonials)
+  const [isTestimonialFormOpen, setIsTestimonialFormOpen] = useState(false);
+  const [editingTestimonial, setEditingTestimonial] = useState(null);
+  const [testName, setTestName] = useState('');
+  const [testService, setTestService] = useState('');
+  const [testRating, setTestRating] = useState(5);
+  const [testComment, setTestComment] = useState('');
+  const [testDate, setTestDate] = useState('');
+  const [testVisible, setTestVisible] = useState(true);
+  const [testPosition, setTestPosition] = useState(0);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -329,6 +350,105 @@ const Admin = () => {
     return STEPS.find(s => s.step === stepNum)?.label || 'Desconocido';
   };
 
+  // TESTIMONIALS OPERATIONS
+  const openAddTestimonial = () => {
+    setEditingTestimonial(null);
+    setTestName('');
+    setTestService('');
+    setTestRating(5);
+    setTestComment('');
+    setTestDate(new Date().toLocaleDateString('es-AR'));
+    setTestVisible(true);
+    const maxPos = testimonials.reduce((max, t) => Math.max(max, t.position || 0), 0);
+    setTestPosition(maxPos + 1);
+    setIsTestimonialFormOpen(true);
+  };
+
+  const openEditTestimonial = (test) => {
+    setEditingTestimonial(test);
+    setTestName(test.name);
+    setTestService(test.service);
+    setTestRating(test.rating);
+    setTestComment(test.comment);
+    setTestDate(test.date);
+    setTestVisible(test.visible !== false);
+    setTestPosition(test.position || 0);
+    setIsTestimonialFormOpen(true);
+  };
+
+  const handleTestimonialSubmit = async (e) => {
+    e.preventDefault();
+    const testimonialData = {
+      id: editingTestimonial ? editingTestimonial.id : Date.now(),
+      name: testName,
+      service: testService,
+      rating: Number(testRating),
+      comment: testComment,
+      date: testDate,
+      visible: testVisible,
+      position: Number(testPosition)
+    };
+
+    let updatedTestimonials;
+    if (editingTestimonial) {
+      updatedTestimonials = testimonials.map(t => t.id === editingTestimonial.id ? testimonialData : t);
+    } else {
+      updatedTestimonials = [testimonialData, ...testimonials];
+    }
+    
+    updatedTestimonials.sort((a, b) => {
+      const posA = a.position !== undefined ? Number(a.position) : 9999;
+      const posB = b.position !== undefined ? Number(b.position) : 9999;
+      if (posA !== posB) return posA - posB;
+      return Number(b.id) - Number(a.id);
+    });
+
+    setTestimonials(updatedTestimonials);
+    setIsTestimonialFormOpen(false);
+    await saveDbTestimonial(testimonialData);
+    showAlert(
+      editingTestimonial ? 'Opinión actualizada' : 'Opinión creada',
+      `La opinión de "${testName}" se guardó con éxito.`,
+      'success'
+    );
+  };
+
+  const handleDeleteTestimonial = async (id) => {
+    const confirmed = await showConfirm(
+      '¿Eliminar opinión?',
+      'Esta acción no se puede deshacer. ¿Estás seguro de que querés eliminar esta opinión?',
+      'danger'
+    );
+    if (confirmed) {
+      setTestimonials(testimonials.filter(t => t.id !== id));
+      await deleteDbTestimonial(id);
+      showAlert('Opinión eliminada', 'La opinión fue eliminada exitosamente.', 'success');
+    }
+  };
+
+  const handleToggleVisibility = async (test) => {
+    const updatedTest = { ...test, visible: test.visible === false ? true : false };
+    setTestimonials(testimonials.map(t => t.id === test.id ? updatedTest : t));
+    await saveDbTestimonial(updatedTest);
+  };
+
+  const handleUpdatePosition = async (test, newPos) => {
+    const posNum = Number(newPos);
+    if (isNaN(posNum)) return;
+    const updatedTest = { ...test, position: posNum };
+    const updatedList = testimonials.map(t => t.id === test.id ? updatedTest : t);
+    
+    updatedList.sort((a, b) => {
+      const posA = a.position !== undefined ? Number(a.position) : 9999;
+      const posB = b.position !== undefined ? Number(b.position) : 9999;
+      if (posA !== posB) return posA - posB;
+      return Number(b.id) - Number(a.id);
+    });
+
+    setTestimonials(updatedList);
+    await saveDbTestimonial(updatedTest);
+  };
+
   return (
     <>
       <Helmet>
@@ -404,15 +524,21 @@ const Admin = () => {
               <div className="admin-tabs">
                 <button 
                   className={`admin-tab-btn ${activeTab === 'store' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('store'); setIsProductFormOpen(false); }}
+                  onClick={() => { setActiveTab('store'); setIsProductFormOpen(false); setIsTestimonialFormOpen(false); }}
                 >
                   <ShoppingBag size={18} /> Gestionar Tienda ({products.length})
                 </button>
                 <button 
                   className={`admin-tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('tracking'); setIsTicketFormOpen(false); }}
+                  onClick={() => { setActiveTab('tracking'); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); }}
                 >
                   <Wrench size={18} /> Gestionar Reparaciones ({Object.keys(tickets).length})
+                </button>
+                <button 
+                  className={`admin-tab-btn ${activeTab === 'testimonials' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('testimonials'); setIsProductFormOpen(false); setIsTicketFormOpen(false); }}
+                >
+                  <MessageSquare size={18} /> Gestionar Opiniones ({testimonials.length})
                 </button>
               </div>
 
@@ -741,6 +867,209 @@ const Admin = () => {
                             <td className="col-actions">
                               <button onClick={() => openEditTicket(tick)} className="table-btn edit-btn" title="Editar"><Edit size={16} /></button>
                               <button onClick={() => handleDeleteTicket(tick.ticketId)} className="table-btn delete-btn" title="Eliminar"><Trash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: GESTIÓN DE OPINIONES */}
+              {activeTab === 'testimonials' && (
+                <div className="admin-content-box">
+                  <div className="table-actions">
+                    <h3>Listado de Opiniones de Clientes</h3>
+                    <button className="btn btn-primary" onClick={openAddTestimonial}>
+                      <Plus size={16} /> Agregar Opinión
+                    </button>
+                  </div>
+
+                  {/* Testimonial Form Card (Collapsible) */}
+                  <AnimatePresence>
+                    {isTestimonialFormOpen && (
+                      <motion.div 
+                        className="admin-form-container"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <div className="form-card-header-admin">
+                          <h4>{editingTestimonial ? 'Editar Opinión' : 'Nueva Opinión'}</h4>
+                          <button onClick={() => setIsTestimonialFormOpen(false)}><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={handleTestimonialSubmit} className="admin-editor-form">
+                          <div className="form-row-admin">
+                            <div className="form-group-admin">
+                              <label>Nombre del Cliente</label>
+                              <input 
+                                type="text" 
+                                value={testName} 
+                                onChange={(e) => setTestName(e.target.value)} 
+                                placeholder="Ej. Diego Fernández" 
+                                required 
+                              />
+                            </div>
+                            <div className="form-group-admin">
+                              <label>Servicio / Trabajo Realizado</label>
+                              <input 
+                                type="text" 
+                                value={testService} 
+                                onChange={(e) => setTestService(e.target.value)} 
+                                placeholder="Ej. Reparación de Notebook HP" 
+                                required 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-row-admin">
+                            <div className="form-group-admin">
+                              <label>Calificación (Estrellas 1-5)</label>
+                              <select value={testRating} onChange={(e) => setTestRating(Number(e.target.value))}>
+                                <option value={5}>5 Estrellas</option>
+                                <option value={4}>4 Estrellas</option>
+                                <option value={3}>3 Estrellas</option>
+                                <option value={2}>2 Estrellas</option>
+                                <option value={1}>1 Estrella</option>
+                              </select>
+                            </div>
+                            <div className="form-group-admin">
+                              <label>Fecha de la opinión</label>
+                              <input 
+                                type="text" 
+                                value={testDate} 
+                                onChange={(e) => setTestDate(e.target.value)} 
+                                placeholder="DD/MM/AAAA" 
+                                required 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-row-admin">
+                            <div className="form-group-admin">
+                              <label>Posición en la lista</label>
+                              <input 
+                                type="number" 
+                                value={testPosition} 
+                                onChange={(e) => setTestPosition(e.target.value)} 
+                                placeholder="Ej. 1 (menor número = aparece primero)" 
+                                required 
+                              />
+                            </div>
+                            <div className="form-group-admin" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                              <label style={{ marginBottom: '0.5rem' }}>Visibilidad en Web</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input 
+                                  type="checkbox" 
+                                  id="testVisibleCheckbox"
+                                  checked={testVisible} 
+                                  onChange={(e) => setTestVisible(e.target.checked)}
+                                  style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="testVisibleCheckbox" style={{ margin: 0, cursor: 'pointer', fontWeight: 'normal' }}>
+                                  Visible para el público
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="form-group-admin">
+                            <label>Comentario / Opinión</label>
+                            <textarea 
+                              rows="4" 
+                              value={testComment} 
+                              onChange={(e) => setTestComment(e.target.value)}
+                              placeholder="Escribí el comentario del cliente..."
+                              required
+                            ></textarea>
+                          </div>
+
+                          <div className="form-actions-admin">
+                            <button type="button" className="btn btn-outline" onClick={() => setIsTestimonialFormOpen(false)}>Cancelar</button>
+                            <button type="submit" className="btn btn-primary"><Save size={16} /> Guardar Opinión</button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Testimonials Table */}
+                  <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Posición</th>
+                          <th>Cliente</th>
+                          <th>Servicio</th>
+                          <th>Comentario</th>
+                          <th>Calificación</th>
+                          <th>Visibilidad</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {testimonials.map(test => (
+                          <tr key={test.id}>
+                            <td className="col-position" style={{ width: '90px' }}>
+                              <input 
+                                type="number" 
+                                value={test.position !== undefined ? test.position : ''} 
+                                onChange={(e) => handleUpdatePosition(test, e.target.value)}
+                                className="admin-pos-input"
+                                style={{
+                                  width: '60px',
+                                  padding: '0.25rem',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--color-border)',
+                                  background: 'var(--color-bg-alt)',
+                                  color: 'var(--color-text)',
+                                  textAlign: 'center'
+                                }}
+                              />
+                            </td>
+                            <td>
+                              <strong>{test.name}</strong>
+                              <span className="table-subtext">{test.date}</span>
+                            </td>
+                            <td>{test.service}</td>
+                            <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={test.comment}>
+                              {test.comment}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '2px', color: '#ffb400' }}>
+                                {[...Array(5)].map((_, i) => (
+                                  <Star 
+                                    key={i} 
+                                    size={14} 
+                                    fill={i < test.rating ? "#ffb400" : "none"} 
+                                    stroke={i < test.rating ? "#ffb400" : "currentColor"} 
+                                  />
+                                ))}
+                              </div>
+                            </td>
+                            <td>
+                              <button 
+                                onClick={() => handleToggleVisibility(test)} 
+                                className={`table-btn ${test.visible !== false ? 'edit-btn' : 'delete-btn'}`}
+                                title={test.visible !== false ? "Ocultar en la web" : "Mostrar en la web"}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.5rem', borderRadius: '4px' }}
+                              >
+                                {test.visible !== false ? (
+                                  <>
+                                    <Eye size={16} /> <span>Visible</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff size={16} /> <span style={{ opacity: 0.6 }}>Oculto</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                            <td className="col-actions">
+                              <button onClick={() => openEditTestimonial(test)} className="table-btn edit-btn" title="Editar"><Edit size={16} /></button>
+                              <button onClick={() => handleDeleteTestimonial(test.id)} className="table-btn delete-btn" title="Eliminar"><Trash2 size={16} /></button>
                             </td>
                           </tr>
                         ))}

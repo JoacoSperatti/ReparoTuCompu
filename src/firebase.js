@@ -8,7 +8,7 @@ import {
   deleteDoc, 
   collection 
 } from "firebase/firestore";
-import { INITIAL_TICKETS } from "./data/initialData";
+import { INITIAL_TICKETS, INITIAL_TESTIMONIALS } from "./data/initialData";
 
 // Configuración de Firebase para el proyecto Reparo Tu Compu usando variables de entorno
 const firebaseConfig = {
@@ -198,5 +198,84 @@ export const deleteDbTicket = async (ticketId) => {
     const tickets = JSON.parse(saved);
     delete tickets[cleanId];
     localStorage.setItem("rtc_tickets", JSON.stringify(tickets));
+  }
+};
+
+// -------------------------------------------------------------
+// TESTIMONIALS SERVICES (OPINIONES DE CLIENTES)
+// -------------------------------------------------------------
+
+export const getDbTestimonials = async () => {
+  if (isFirebaseConfigured) {
+    try {
+      const querySnapshot = await getDocs(collection(db, "testimonials"));
+      const list = [];
+      querySnapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      // Sort by position (ascending), then by ID descending
+      return list.sort((a, b) => {
+        const posA = a.position !== undefined ? Number(a.position) : 9999;
+        const posB = b.position !== undefined ? Number(b.position) : 9999;
+        if (posA !== posB) return posA - posB;
+        return Number(b.id) - Number(a.id);
+      });
+    } catch (error) {
+      console.error("❌ Error fetching testimonials from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  // LocalStorage Fallback
+  const saved = localStorage.getItem("rtc_testimonials");
+  if (saved) return JSON.parse(saved);
+  localStorage.setItem("rtc_testimonials", JSON.stringify(INITIAL_TESTIMONIALS));
+  return INITIAL_TESTIMONIALS;
+};
+
+export const saveDbTestimonial = async (testimonial) => {
+  const { id, ...data } = testimonial;
+  const strId = String(id);
+
+  if (isFirebaseConfigured) {
+    try {
+      await setDoc(doc(db, "testimonials", strId), data);
+      return;
+    } catch (error) {
+      console.error("❌ Error saving testimonial to Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  // LocalStorage Fallback
+  const saved = localStorage.getItem("rtc_testimonials");
+  const list = saved ? JSON.parse(saved) : INITIAL_TESTIMONIALS;
+  const exists = list.some(t => String(t.id) === strId);
+  
+  let updated;
+  if (exists) {
+    updated = list.map(t => String(t.id) === strId ? testimonial : t);
+  } else {
+    updated = [testimonial, ...list];
+  }
+  localStorage.setItem("rtc_testimonials", JSON.stringify(updated));
+};
+
+export const deleteDbTestimonial = async (id) => {
+  const strId = String(id);
+
+  if (isFirebaseConfigured) {
+    try {
+      await deleteDoc(doc(db, "testimonials", strId));
+      return;
+    } catch (error) {
+      console.error("❌ Error deleting testimonial from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  // LocalStorage Fallback
+  const saved = localStorage.getItem("rtc_testimonials");
+  if (saved) {
+    const list = JSON.parse(saved);
+    const updated = list.filter(t => String(t.id) !== strId);
+    localStorage.setItem("rtc_testimonials", JSON.stringify(updated));
   }
 };
