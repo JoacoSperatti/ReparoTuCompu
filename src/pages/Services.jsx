@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Expand, X } from 'lucide-react';
-import './Portfolio.css';
+import './Services.css';
 
 const portfolioItems = [
   {
@@ -51,7 +51,7 @@ const portfolioItems = [
 
 const categories = ["Todos", ...new Set(portfolioItems.map(item => item.category))];
 
-const Portfolio = () => {
+const Services = () => {
   const [filter, setFilter] = useState("Todos");
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -67,8 +67,8 @@ const Portfolio = () => {
   return (
     <>
       <Helmet>
-        <title>Trabajos Realizados | Reparo Tu Compu</title>
-        <meta name="description" content="Galería de nuestros trabajos: armados de PC gamer, setups de oficina, reparaciones complejas y más." />
+        <title>Nuestros Servicios | Reparo Tu Compu</title>
+        <meta name="description" content="Galería de nuestros servicios: armados de PC gamer, setups de oficina, reparaciones complejas y más." />
       </Helmet>
 
       <section className="portfolio-hero">
@@ -78,7 +78,7 @@ const Portfolio = () => {
             animate="visible" 
             variants={fadeInUp}
           >
-            Trabajos Realizados
+            Nuestros Servicios
           </motion.h1>
           <motion.p 
             className="portfolio-subtitle"
@@ -92,7 +92,7 @@ const Portfolio = () => {
         </div>
       </section>
 
-      <section className="container pb-5">
+      <section className="services-content-section container">
         <div className="portfolio-filters">
           {categories.map((cat, index) => (
             <button 
@@ -168,4 +168,4 @@ const Portfolio = () => {
   );
 };
 
-export default Portfolio;
+export default Services;

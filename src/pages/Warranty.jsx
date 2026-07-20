@@ -37,7 +37,7 @@ const Warranty = () => {
         </div>
       </section>
 
-      <section className="container pb-5">
+      <section className="warranty-content-section container">
         <div className="warranty-grid">
           <motion.div 
             className="warranty-card primary-card"

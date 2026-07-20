@@ -194,8 +194,9 @@
   line-height: 1.6;
 }
 
-.pb-5 {
-  padding-bottom: 5rem;
+.services-content-section.container {
+  padding-top: 4rem;
+  padding-bottom: 8rem;
 }
 
 @media (max-width: 768px) {

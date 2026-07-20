@@ -4,7 +4,9 @@ import Home from './pages/Home';
 import Store from './pages/Store';
 import Quote from './pages/Quote';
 import Warranty from './pages/Warranty';
-import Portfolio from './pages/Portfolio';
+import Services from './pages/Services';
+import Tracking from './pages/Tracking';
+import Admin from './pages/Admin';
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
           <Route path="tienda" element={<Store />} />
           <Route path="cotizacion" element={<Quote />} />
           <Route path="garantias" element={<Warranty />} />
-          <Route path="trabajos" element={<Portfolio />} />
+          <Route path="servicios" element={<Services />} />
+          <Route path="seguimiento" element={<Tracking />} />
+          <Route path="panel-control-secreto" element={<Admin />} />
         </Route>
       </Routes>
     </Router>

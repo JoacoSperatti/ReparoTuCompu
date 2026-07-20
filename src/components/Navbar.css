@@ -1,5 +1,7 @@
 .navbar-header {
-  background-color: var(--color-bg-base);
+  background-color: var(--color-header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -34,8 +36,14 @@
 
 .navbar-links {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   align-items: center;
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+  .navbar-links {
+    gap: 1rem;
+  }
 }
 
 .nav-link {
@@ -94,5 +102,41 @@
     transform: translateY(0);
     opacity: 1;
     pointer-events: all;
+  }
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0.35rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  margin-left: 0.25rem;
+}
+
+.theme-toggle:hover {
+  color: var(--color-primary);
+  background-color: var(--color-bg-alt);
+}
+
+.theme-toggle svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(15deg) scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    margin-left: 0;
+    padding: 0.5rem 1rem;
+    width: auto;
+    border-radius: var(--radius-md);
   }
 }

@@ -1,17 +1,19 @@
 :root {
-  --color-primary: #0052cc;
-  --color-primary-hover: #0043a6;
-  --color-bg-base: #ffffff;
-  --color-bg-alt: #f8f9fc;
-  --color-text-main: #171a21;
-  --color-text-muted: #64748b;
-  --color-border: #e2e8f0;
+  /* Default: Dark Theme */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-bg-base: #0f172a;
+  --color-bg-alt: #1e293b;
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
   --color-danger: #ef4444;
   --color-success: #22c55e;
+  --color-header-bg: rgba(15, 23, 42, 0.85);
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
   
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
@@ -20,6 +22,22 @@
   
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="light"] {
+  /* Light Theme overrides */
+  --color-primary: #0052cc;
+  --color-primary-hover: #0043a6;
+  --color-bg-base: #ffffff;
+  --color-bg-alt: #f8f9fc;
+  --color-text-main: #171a21;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-header-bg: rgba(255, 255, 255, 0.85);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -34,6 +52,7 @@ body {
   color: var(--color-text-main);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
