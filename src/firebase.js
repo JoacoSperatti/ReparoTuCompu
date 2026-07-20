@@ -126,15 +126,6 @@ export const getDbTickets = async () => {
       querySnapshot.forEach((doc) => {
         ticketsMap[doc.id] = { ticketId: doc.id, ...doc.data() };
       });
-
-      // If empty, populate with default tickets
-      if (Object.keys(ticketsMap).length === 0) {
-        console.log("🔥 Firestore tickets empty. Populating initial tickets...");
-        for (const [key, tick] of Object.entries(INITIAL_TICKETS)) {
-          await setDoc(doc(db, "tickets", key), tick);
-          ticketsMap[key] = tick;
-        }
-      }
       return ticketsMap;
     } catch (error) {
       console.error("❌ Error fetching tickets from Firestore, falling back to LocalStorage:", error);
