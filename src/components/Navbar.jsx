@@ -52,6 +52,9 @@ const Navbar = () => {
           <NavLink to="/seguimiento" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMenu}>
             Seguimiento
           </NavLink>
+          <NavLink to="/acceso-clientes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMenu}>
+            Área Cliente
+          </NavLink>
           <button 
             className="theme-toggle" 
             onClick={() => {

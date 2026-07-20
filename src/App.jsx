@@ -7,6 +7,7 @@ import Warranty from './pages/Warranty';
 import Services from './pages/Services';
 import Tracking from './pages/Tracking';
 import Admin from './pages/Admin';
+import Auth from './pages/Auth';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="servicios" element={<Services />} />
           <Route path="seguimiento" element={<Tracking />} />
           <Route path="gestion-interna" element={<Admin />} />
+          <Route path="acceso-clientes" element={<Auth />} />
         </Route>
       </Routes>
     </Router>
@@ -27,3 +29,4 @@ function App() {
 }
 
 export default App;
+
