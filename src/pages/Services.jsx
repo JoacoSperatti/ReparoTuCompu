@@ -67,8 +67,13 @@ const Services = () => {
   return (
     <>
       <Helmet>
-        <title>Nuestros Servicios | Reparo Tu Compu</title>
-        <meta name="description" content="Galería de nuestros servicios: armados de PC gamer, setups de oficina, reparaciones complejas y más." />
+        <title>Galería de Trabajos y Servicios | Reparo Tu Compu</title>
+        <meta name="description" content="Mirá nuestros trabajos realizados: armados de PC gamer con watercooling, setups de oficina, reparaciones de notebooks, gestión de cables y más." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/servicios" />
+        <meta property="og:title" content="Galería de Trabajos | Reparo Tu Compu" />
+        <meta property="og:description" content="PC gamers, setups de oficina, reparaciones complejas y más. Verís en qué somos buenos." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/servicios" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <section className="portfolio-hero">

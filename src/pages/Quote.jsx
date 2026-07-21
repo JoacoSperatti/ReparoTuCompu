@@ -204,8 +204,21 @@ const Quote = () => {
   return (
     <>
       <Helmet>
-        <title>Cotización | Reparo Tu Compu</title>
-        <meta name="description" content="Solicitá presupuesto para armado de PC, reparación, venta o plan canje de forma fácil y rápida." />
+        <title>Cotización Online | Reparo Tu Compu</title>
+        <meta name="description" content="Solicitá presupuesto instantáneo para reparación de PC o notebook, armado de equipo a medida, venta de componentes o plan canje. Rápido y sin compromisos." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/cotizacion" />
+        <meta property="og:title" content="Cotizá tu Reparación o Armado de PC | Reparo Tu Compu" />
+        <meta property="og:description" content="Presupuesto instantáneo para reparación, armado a medida, plan canje y más. Rápido, fácil y sin compromiso." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/cotizacion" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Service",
+          "serviceType": "Reparación de Computadoras",
+          "provider": { "@type": "LocalBusiness", "name": "Reparo Tu Compu" },
+          "areaServed": { "@type": "City", "name": "Buenos Aires" },
+          "description": "Servicio de reparación de computadoras y notebooks, armado de PCs a medida, plan canje y venta de componentes en Buenos Aires."
+        })}</script>
       </Helmet>
 
       <section className="quote-hero">

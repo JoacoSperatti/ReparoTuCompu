@@ -353,3 +353,71 @@ export const deleteDbClient = async (id) => {
   }
 };
 
+// -------------------------------------------------------------
+// APPOINTMENTS SERVICES
+// -------------------------------------------------------------
+
+export const getDbAppointments = async () => {
+  if (isFirebaseConfigured) {
+    try {
+      const querySnapshot = await getDocs(collection(db, "appointments"));
+      const list = [];
+      querySnapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      return list.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    } catch (error) {
+      console.error("❌ Error fetching appointments from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_appointments");
+  if (saved) return JSON.parse(saved);
+  localStorage.setItem("rtc_appointments", JSON.stringify([]));
+  return [];
+};
+
+export const saveDbAppointment = async (appointment) => {
+  const { id, ...data } = appointment;
+  const strId = String(id);
+
+  if (isFirebaseConfigured) {
+    try {
+      await setDoc(doc(db, "appointments", strId), data);
+      return;
+    } catch (error) {
+      console.error("❌ Error saving appointment to Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_appointments");
+  const appointments = saved ? JSON.parse(saved) : [];
+  const existing = appointments.findIndex(a => String(a.id) === strId);
+  let updated;
+  if (existing >= 0) {
+    updated = appointments.map(a => String(a.id) === strId ? appointment : a);
+  } else {
+    updated = [appointment, ...appointments];
+  }
+  localStorage.setItem("rtc_appointments", JSON.stringify(updated));
+};
+
+export const deleteDbAppointment = async (id) => {
+  const strId = String(id);
+
+  if (isFirebaseConfigured) {
+    try {
+      await deleteDoc(doc(db, "appointments", strId));
+      return;
+    } catch (error) {
+      console.error("❌ Error deleting appointment from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_appointments");
+  if (saved) {
+    const appointments = JSON.parse(saved);
+    const updated = appointments.filter(a => String(a.id) !== strId);
+    localStorage.setItem("rtc_appointments", JSON.stringify(updated));
+  }
+};

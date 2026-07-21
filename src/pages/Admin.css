@@ -1,11 +1,11 @@
 /* Styles for the Hidden Admin Panel */
 
 .admin-login-overlay {
+  min-height: calc(100vh - 160px);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 160px);
-  padding: 2rem;
+  padding: 4rem 2rem 8rem;
   background-color: var(--color-bg-base);
 }
 

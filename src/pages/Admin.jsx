@@ -22,8 +22,6 @@ import {
   EyeOff,
   Star,
   Users,
-  Send,
-  Smartphone,
   Mail,
   Gift
 } from 'lucide-react';

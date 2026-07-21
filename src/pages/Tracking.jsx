@@ -62,7 +62,12 @@ const Tracking = () => {
     <>
       <Helmet>
         <title>Seguimiento de Reparación | Reparo Tu Compu</title>
-        <meta name="description" content="Ingresá tu número de orden para verificar el estado de tu reparación en tiempo real." />
+        <meta name="description" content="Ingresá tu número de orden y verificá en tiempo real el estado de tu reparación: falla detectada, en proceso, listo para retirar." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/seguimiento" />
+        <meta name="robots" content="noindex, follow" />
+        <meta property="og:title" content="Seguimentó tu Reparación | Reparo Tu Compu" />
+        <meta property="og:description" content="Verificá el estado de tu equipo en tiempo real con tu código de orden." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/seguimiento" />
       </Helmet>
 
       <section className="tracking-hero">

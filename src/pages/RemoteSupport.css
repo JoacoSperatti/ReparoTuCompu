@@ -1,0 +1,344 @@
+/* ===========================
+   REMOTE SUPPORT PAGE
+   =========================== */
+
+/* Hero */
+.remote-hero {
+  padding: 4rem 0 3rem;
+  background: linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg-base) 100%);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.remote-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-full);
+  padding: 0.35rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 1.25rem;
+}
+
+.remote-hero-subtitle {
+  font-size: 1.15rem;
+  color: var(--color-text-muted);
+  max-width: 620px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+}
+
+.remote-hero-subtitle strong {
+  color: var(--color-text-main);
+}
+
+.remote-hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Section headers */
+.remote-section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.remote-section-header h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.remote-section-header p {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+/* Problems grid */
+.remote-problems-section.container {
+  padding-top: 5rem;
+  padding-bottom: 1rem;
+}
+
+.remote-problems-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.remote-problem-card {
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.remote-problem-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.remote-problem-icon {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.remote-problem-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.remote-problem-card p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.remote-not-covered {
+  background-color: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.remote-not-covered strong {
+  color: #f59e0b;
+}
+
+.remote-not-covered a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Steps */
+.remote-steps-section {
+  padding: 5rem 0;
+  background-color: var(--color-bg-alt);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.remote-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  position: relative;
+}
+
+.remote-step-card {
+  background-color: var(--color-bg-base);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.remote-step-num {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  opacity: 0.25;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.remote-step-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.remote-step-card p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.remote-step-arrow {
+  display: none;
+}
+
+/* Pricing */
+.remote-pricing-section.container {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+.remote-pricing-table {
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.remote-pricing-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: rgba(59, 130, 246, 0.08);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.remote-pricing-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  transition: var(--transition);
+}
+
+.remote-pricing-row:last-child {
+  border-bottom: none;
+}
+
+.remote-pricing-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.remote-pricing-service {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+.remote-pricing-service svg {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.remote-pricing-time {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  min-width: 110px;
+  justify-content: flex-end;
+}
+
+.remote-pricing-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* CTA section */
+.remote-cta-section {
+  padding: 5rem 0;
+  background-color: var(--color-bg-base);
+}
+
+.remote-cta-box {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.03) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.remote-cta-security {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex: 1;
+  min-width: 280px;
+}
+
+.remote-cta-security svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.remote-cta-security h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.remote-cta-security p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .remote-steps-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .remote-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .remote-pricing-header,
+  .remote-pricing-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .remote-pricing-header span:last-child,
+  .remote-pricing-price {
+    display: none;
+  }
+
+  .remote-cta-box {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .remote-cta-security {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .remote-hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}

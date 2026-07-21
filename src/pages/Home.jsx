@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Wrench, Cpu, RefreshCw, MonitorSmartphone, Star, MessageSquare, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Wrench, Cpu, RefreshCw, MonitorSmartphone, Star, MessageSquare, CheckCircle2, ChevronDown, Calendar } from 'lucide-react';
 import './Home.css';
 import { getDbTestimonials, saveDbTestimonial } from '../firebase';
 
@@ -101,8 +101,34 @@ const Home = () => {
   return (
     <>
       <Helmet>
-        <title>Inicio | Reparo Tu Compu</title>
-        <meta name="description" content="¿Se te rompió la compu? Nosotros lo solucionamos. Armamos tu compu ideal a tu medida. Opiniones y presupuestos al instante." />
+        <title>Reparo Tu Compu — Servicio Técnico Informático en Buenos Aires</title>
+        <meta name="description" content="¿Se te rompió la compu? Reparamos notebooks y PCs, armamos equipos a medida, hacemos mantenimiento preventivo y plan canje. Presupuesto instantáneo por WhatsApp." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/" />
+        <meta property="og:title" content="Reparo Tu Compu — Servicio Técnico Informático" />
+        <meta property="og:description" content="Reparamos notebooks y PCs, armamos equipos a medida, mantenimiento preventivo y plan canje. Presupuesto instantáneo." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "Reparo Tu Compu",
+          "description": "Servicio técnico informático especializado en reparación de computadoras, notebooks, armado de PCs a medida y mantenimiento preventivo.",
+          "url": "https://reparotucompu.com.ar",
+          "telephone": "+5491131608396",
+          "email": "contacto@reparotucompu.com.ar",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Buenos Aires",
+            "addressCountry": "AR"
+          },
+          "openingHours": "Mo-Fr 09:00-18:00",
+          "priceRange": "$$",
+          "sameAs": [],
+          "serviceArea": {
+            "@type": "City",
+            "name": "Buenos Aires"
+          }
+        })}</script>
       </Helmet>
 
       {/* Hero Section */}
@@ -191,7 +217,7 @@ const Home = () => {
               </motion.div>
             </Link>
 
-            <Link to="/cotizacion" state={{ selectType: 'canje' }} className="service-card-link">
+            <Link to="/turnos" className="service-card-link">
               <motion.div 
                 className="service-card"
                 initial="hidden"
@@ -201,13 +227,35 @@ const Home = () => {
                 transition={{ delay: 0.3 }}
               >
                 <div className="service-icon">
-                  <RefreshCw size={32} />
+                  <Calendar size={32} />
                 </div>
-                <h3>Plan Canje</h3>
-                <p>Tomamos tu PC usada en parte de pago. Describinos tu equipo actual y el que te gustaría llevarte.</p>
+                <h3>Turnos</h3>
+                <p>Reservá tu turno online para traer tu equipo a nuestro taller sin demoras ni esperas.</p>
               </motion.div>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Featured Banner - Plan Canje */}
+      <section className="section plan-canje-banner">
+        <div className="container">
+          <motion.div 
+            className="canje-content"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="canje-text">
+              <h2>Plan Canje: Renová tu equipo</h2>
+              <p>Tomamos tu PC o Notebook usada en parte de pago. Describinos tu equipo actual y te descontamos su valor de tu nueva compra o armado.</p>
+              <Link to="/cotizacion" state={{ selectType: 'canje' }} className="btn btn-primary btn-lg mt-3">Cotizar mi Canje</Link>
+            </div>
+            <div className="canje-image-placeholder">
+              <RefreshCw size={120} className="text-primary opacity-50" />
+            </div>
+          </motion.div>
         </div>
       </section>
 

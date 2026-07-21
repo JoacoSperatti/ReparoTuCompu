@@ -13,7 +13,11 @@ const Warranty = () => {
     <>
       <Helmet>
         <title>Garantías | Reparo Tu Compu</title>
-        <meta name="description" content="Información sobre nuestras garantías. 1 mes de garantía nuestra y 3 meses por parte del proveedor." />
+        <meta name="description" content="Conocer nuestras políticas de garantía: 1 mes de garantía propia en mano de obra y 3 meses de garantía del proveedor en componentes nuevos." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/garantias" />
+        <meta property="og:title" content="Políticas de Garantía | Reparo Tu Compu" />
+        <meta property="og:description" content="Garantía de 1 mes en mano de obra y 3 meses en componentes nuevos. Tu tranquilidad es nuestra prioridad." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/garantias" />
       </Helmet>
 
       <section className="warranty-hero">

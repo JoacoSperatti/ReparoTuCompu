@@ -64,8 +64,13 @@ const Store = () => {
   return (
     <>
       <Helmet>
-        <title>Tienda | Reparo Tu Compu</title>
-        <meta name="description" content="Explora nuestro catálogo de PCs nuevas, usadas, gamers, componentes y periféricos con especificaciones técnicas detalladas." />
+        <title>Tienda de Componentes y PCs | Reparo Tu Compu</title>
+        <meta name="description" content="Catálogo de PCs nuevas, usadas y gamers, componentes y periféricos con especificaciones técnicas detalladas. Precíos actualizados en Buenos Aires." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/tienda" />
+        <meta property="og:title" content="Tienda de Componentes y PCs | Reparo Tu Compu" />
+        <meta property="og:description" content="PCs nuevas, usadas y gamers, componentes y periféricos. Presupuesto instantáneo en Buenos Aires." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/tienda" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <div className="store-layout container">

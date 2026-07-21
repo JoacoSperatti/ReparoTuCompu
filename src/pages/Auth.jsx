@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
@@ -10,15 +11,13 @@ import {
   Calendar, 
   Bell, 
   LogOut, 
-  CheckCircle2, 
   Wrench, 
-  Clock, 
-  AlertTriangle,
   Gift,
   RefreshCw,
   Notebook
 } from 'lucide-react';
 import { getDbClients, saveDbClient, getDbTickets } from '../firebase';
+import { CONFIG } from '../config';
 import './Auth.css';
 
 const Auth = () => {
@@ -96,7 +95,7 @@ const Auth = () => {
       } else {
         setErrorMsg('Correo electrónico o contraseña incorrectos.');
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('Ocurrió un error al iniciar sesión. Inténtalo de nuevo.');
     }
   };
@@ -142,7 +141,7 @@ const Auth = () => {
       localStorage.setItem('rtc_logged_client', JSON.stringify(newClient));
       setSuccessMsg('¡Registro exitoso! Sesión iniciada.');
       setClientTickets([]); // New client has no tickets initially
-    } catch (err) {
+    } catch {
       setErrorMsg('Ocurrió un error al registrarte. Inténtalo de nuevo.');
     }
   };
@@ -216,10 +215,37 @@ const Auth = () => {
     <>
       <Helmet>
         <title>{loggedClient ? 'Área de Clientes' : 'Acceso Clientes'} | Reparo Tu Compu</title>
-        <meta name="description" content="Inicia sesión o regístrate en Reparo Tu Compu. Gestiona tus reparaciones y haz seguimiento a tus equipos." />
+        <meta name="description" content="Iniciá sesión en tu cuenta de Reparo Tu Compu para ver el estado de tus reparaciones, fechas de mantenimiento y ofertas exclusivas." />
+        <link rel="canonical" href="https://reparotucompu.com.ar/acceso-clientes" />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta property="og:title" content="Área de Clientes | Reparo Tu Compu" />
+        <meta property="og:description" content="Accedé a tu cuenta para ver el estado de tus reparaciones y mantenimientos." />
+        <meta property="og:url" content="https://reparotucompu.com.ar/acceso-clientes" />
       </Helmet>
 
-      <div className="auth-page-container container py-5">
+      <section className="auth-hero">
+        <div className="container text-center">
+          <motion.h1
+            key={loggedClient ? 'logged' : 'guest'}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {loggedClient ? `¡Bienvenido, ${loggedClient.name.split(' ')[0]}!` : 'Área de Clientes'}
+          </motion.h1>
+          <motion.p
+            key={loggedClient ? 'logged-sub' : 'guest-sub'}
+            className="auth-hero-subtitle"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            {loggedClient ? 'Administrá tu perfil, seguí tus reparaciones y gestioná tus preferencias.' : 'Iniciá sesión o registrate para gestionar tus reparaciones y recibir recordatorios de mantenimiento.'}
+          </motion.p>
+        </div>
+      </section>
+
+      <section className="auth-content-section container">
         <AnimatePresence mode="wait">
           {!loggedClient ? (
             /* AUTHENTICATION FORM (LOGIN / REGISTER) */
@@ -228,8 +254,8 @@ const Auth = () => {
               className="auth-box"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3 }}
             >
               <div className="auth-tabs">
                 <button 
@@ -423,10 +449,10 @@ const Auth = () => {
             <motion.div 
               key="client-dashboard"
               className="client-dashboard-grid"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3 }}
             >
               {/* Left Column: Client Profile & Subscriptions */}
               <div className="client-sidebar">
@@ -512,7 +538,7 @@ const Auth = () => {
                   </p>
                   {(maintStatus.isOverdue || maintStatus.isSoon) && (
                     <a 
-                      href={`https://wa.me/5491112345678?text=Hola! Soy ${loggedClient.name} y me gustaría agendar un turno para el mantenimiento preventivo de mi equipo (${loggedClient.device}).`}
+                      href={`https://wa.me/${CONFIG.whatsappNumber}?text=Hola! Soy ${loggedClient.name} y me gustaría agendar un turno para el mantenimiento preventivo de mi equipo (${loggedClient.device}).`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary mt-2"
@@ -580,19 +606,19 @@ const Auth = () => {
                 </div>
 
                 {/* Custom Offers & Equipment Change */}
-                <div className="client-marketing-offers-grid mt-4">
+                <div className="client-marketing-offers-grid">
                   <div className="marketing-promo-card">
                     <Gift size={24} className="text-primary" />
                     <h4>Oferta Especial</h4>
                     <p>15% de descuento en la compra de tu disco SSD de 1TB para actualizar tu equipo.</p>
-                    <a href="/tienda" className="link-action mt-2">Ver componentes en Tienda</a>
+                    <Link to="/tienda" className="link-action">Ver componentes en Tienda</Link>
                   </div>
 
                   <div className="marketing-promo-card">
                     <RefreshCw size={24} className="text-primary" />
                     <h4>Plan Canje Activo</h4>
                     <p>Cotizá tu computadora usada para llevarte una Notebook HP Pavilion de última generación en cuotas.</p>
-                    <a href="/cotizacion" state={{ selectType: 'canje' }} className="link-action mt-2">Cotizar mi Canje</a>
+                    <Link to="/cotizacion" className="link-action">Cotizar mi Canje</Link>
                   </div>
                 </div>
 
@@ -600,7 +626,7 @@ const Auth = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </section>
     </>
   );
 };
