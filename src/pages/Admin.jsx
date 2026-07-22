@@ -155,8 +155,17 @@ const Admin = () => {
   const [prodImg, setProdImg] = useState('');
   const [prodCondition, setProdCondition] = useState('Nuevo');
   const [prodWarranty, setProdWarranty] = useState('');
-  const [prodStock, setProdStock] = useState('');
   const [prodSpecs, setProdSpecs] = useState('');
+  // New Product Fields
+  const [prodInStock, setProdInStock] = useState(true);
+  const [prodHasDiscount, setProdHasDiscount] = useState(false);
+  const [prodDiscountPrice, setProdDiscountPrice] = useState('');
+  const [prodHasExtra, setProdHasExtra] = useState(false);
+  const [prodExtraName, setProdExtraName] = useState('');
+  const [prodExtraPrice, setProdExtraPrice] = useState('');
+  const [prodCurrency, setProdCurrency] = useState('ARS');
+  const [prodBrand, setProdBrand] = useState('');
+  const [prodRam, setProdRam] = useState('');
 
   // Editor states (Tracking)
   const [isTicketFormOpen, setIsTicketFormOpen] = useState(false);
@@ -225,8 +234,16 @@ const Admin = () => {
     setProdImg('https://images.unsplash.com/photo-1587202372634-32705e3bf49c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80');
     setProdCondition('Nuevo');
     setProdWarranty('12 meses de garantía');
-    setProdStock('Disponible (Inmediato)');
     setProdSpecs('Procesador\nMemoria RAM\nAlmacenamiento');
+    setProdInStock(true);
+    setProdHasDiscount(false);
+    setProdDiscountPrice('');
+    setProdHasExtra(false);
+    setProdExtraName('');
+    setProdExtraPrice('');
+    setProdCurrency('ARS');
+    setProdBrand('');
+    setProdRam('');
     setIsProductFormOpen(true);
   };
 
@@ -238,8 +255,16 @@ const Admin = () => {
     setProdImg(prod.img);
     setProdCondition(prod.condition);
     setProdWarranty(prod.warranty);
-    setProdStock(prod.stock);
     setProdSpecs(prod.specs.join('\n'));
+    setProdInStock(prod.inStock !== false); // default to true
+    setProdHasDiscount(prod.hasDiscount || false);
+    setProdDiscountPrice(prod.discountPrice || '');
+    setProdHasExtra(prod.hasExtra || false);
+    setProdExtraName(prod.extraName || '');
+    setProdExtraPrice(prod.extraPrice || '');
+    setProdCurrency(prod.currency || 'ARS');
+    setProdBrand(prod.brand || '');
+    setProdRam(prod.ram || '');
     setIsProductFormOpen(true);
   };
 
@@ -255,8 +280,16 @@ const Admin = () => {
       img: prodImg,
       condition: prodCondition,
       warranty: prodWarranty,
-      stock: prodStock,
-      specs: specsArray
+      specs: specsArray,
+      inStock: prodInStock,
+      hasDiscount: prodHasDiscount,
+      discountPrice: Number(prodDiscountPrice) || 0,
+      hasExtra: prodHasExtra,
+      extraName: prodExtraName,
+      extraPrice: Number(prodExtraPrice) || 0,
+      currency: prodCurrency,
+      brand: prodBrand,
+      ram: prodRam
     };
 
     if (editingProduct) {
@@ -741,15 +774,24 @@ const Admin = () => {
                                 required 
                               />
                             </div>
-                            <div className="form-group-admin">
-                              <label>Precio (USD)</label>
-                              <input 
-                                type="number" 
-                                value={prodPrice} 
-                                onChange={(e) => setProdPrice(e.target.value)} 
-                                placeholder="Ej. 450" 
-                                required 
-                              />
+                            <div className="form-group-admin" style={{ display: 'flex', gap: '0.5rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <label>Moneda</label>
+                                <select value={prodCurrency} onChange={(e) => setProdCurrency(e.target.value)}>
+                                  <option value="ARS">ARS</option>
+                                  <option value="USD">USD</option>
+                                </select>
+                              </div>
+                              <div style={{ flex: 2 }}>
+                                <label>Precio</label>
+                                <input 
+                                  type="number" 
+                                  value={prodPrice} 
+                                  onChange={(e) => setProdPrice(e.target.value)} 
+                                  placeholder="Ej. 450" 
+                                  required 
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -766,31 +808,30 @@ const Admin = () => {
                               <label>Estado</label>
                               <select value={prodCondition} onChange={(e) => setProdCondition(e.target.value)}>
                                 <option value="Nuevo">Nuevo</option>
-                                <option value="Usado - Excelente estado">Usado - Excelente estado</option>
-                                <option value="Reacondicionado">Reacondicionado</option>
+                                <option value="Usado">Usado</option>
                               </select>
                             </div>
                           </div>
 
+
+
                           <div className="form-row-admin">
                             <div className="form-group-admin">
-                              <label>Garantía</label>
+                              <label>Marca (Filtro)</label>
                               <input 
                                 type="text" 
-                                value={prodWarranty} 
-                                onChange={(e) => setProdWarranty(e.target.value)} 
-                                placeholder="Ej. 12 meses oficial" 
-                                required 
+                                value={prodBrand} 
+                                onChange={(e) => setProdBrand(e.target.value)} 
+                                placeholder="Ej. HP, Dell, HyperX" 
                               />
                             </div>
                             <div className="form-group-admin">
-                              <label>Stock / Disponibilidad</label>
+                              <label>Memoria RAM (Filtro)</label>
                               <input 
                                 type="text" 
-                                value={prodStock} 
-                                onChange={(e) => setProdStock(e.target.value)} 
-                                placeholder="Ej. Disponible (Inmediato)" 
-                                required 
+                                value={prodRam} 
+                                onChange={(e) => setProdRam(e.target.value)} 
+                                placeholder="Ej. 8GB, 16GB" 
                               />
                             </div>
                           </div>
@@ -804,6 +845,83 @@ const Admin = () => {
                               placeholder="Link de la imagen" 
                               required 
                             />
+                          </div>
+
+                          <div className="admin-product-advanced" style={{ background: 'var(--color-bg-secondary)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                            <div className="form-row-admin">
+                              <div className="form-group-admin">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={prodInStock} 
+                                    onChange={(e) => setProdInStock(e.target.checked)} 
+                                    style={{ width: 'auto' }}
+                                  />
+                                  Tiene Stock (Si desmarca, muestra cartel de Consultar Stock)
+                                </label>
+                              </div>
+                            </div>
+                            
+                            <div className="form-row-admin" style={{ marginTop: '0.5rem' }}>
+                              <div className="form-group-admin">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={prodHasDiscount} 
+                                    onChange={(e) => setProdHasDiscount(e.target.checked)} 
+                                    style={{ width: 'auto' }}
+                                  />
+                                  Habilitar Descuento
+                                </label>
+                              </div>
+                              {prodHasDiscount && (
+                                <div className="form-group-admin">
+                                  <label>Precio con Descuento</label>
+                                  <input 
+                                    type="number" 
+                                    value={prodDiscountPrice} 
+                                    onChange={(e) => setProdDiscountPrice(e.target.value)} 
+                                    placeholder="Ej. 400" 
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="form-row-admin" style={{ marginTop: '0.5rem' }}>
+                              <div className="form-group-admin">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={prodHasExtra} 
+                                    onChange={(e) => setProdHasExtra(e.target.checked)} 
+                                    style={{ width: 'auto' }}
+                                  />
+                                  Agregar Extra Opcional
+                                </label>
+                              </div>
+                              {prodHasExtra && (
+                                <>
+                                  <div className="form-group-admin">
+                                    <label>Nombre del Extra</label>
+                                    <input 
+                                      type="text" 
+                                      value={prodExtraName} 
+                                      onChange={(e) => setProdExtraName(e.target.value)} 
+                                      placeholder="Ej. Cargador Original" 
+                                    />
+                                  </div>
+                                  <div className="form-group-admin">
+                                    <label>Precio del Extra</label>
+                                    <input 
+                                      type="number" 
+                                      value={prodExtraPrice} 
+                                      onChange={(e) => setProdExtraPrice(e.target.value)} 
+                                      placeholder="Ej. 20000" 
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
 
                           <div className="form-group-admin">
@@ -847,10 +965,10 @@ const Admin = () => {
                             </td>
                             <td className="col-title">
                               <strong>{prod.name}</strong>
-                              <span className="table-subtext">{prod.stock}</span>
+                              <span className="table-subtext">{prod.inStock !== false ? "Disponible" : "Sin Stock"}</span>
                             </td>
                             <td>{prod.category}</td>
-                            <td className="price-td">${prod.price}</td>
+                            <td className="price-td">{prod.currency === 'USD' ? 'U$D' : '$'} {Number(prod.price).toLocaleString('es-AR')}</td>
                             <td><span className={`badge-cond ${prod.condition.toLowerCase().includes('nuevo') ? 'cond-new' : 'cond-used'}`}>{prod.condition}</span></td>
                             <td className="col-actions">
                               <button onClick={() => openEditProduct(prod)} className="table-btn edit-btn" title="Editar"><Edit size={16} /></button>

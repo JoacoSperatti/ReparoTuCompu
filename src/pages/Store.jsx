@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, ShoppingCart, Search, X, Shield, Info, CreditCard } from 'lucide-react';
+import { Filter, ShoppingCart, Search, X, Info, CreditCard } from 'lucide-react';
 import { getDbProducts } from '../firebase';
 import './Store.css';
 
@@ -11,13 +11,20 @@ const categories = [
   "Componentes", "Periféricos", "Monitores", "Teclados", "Parlantes", "Componentes pc", "Combos actualización"
 ];
 
+const formatPrice = (price) => Number(price).toLocaleString('es-AR');
+
 const Store = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Todos");
+  const [activeBrand, setActiveBrand] = useState("Todos");
+  const [activeRam, setActiveRam] = useState("Todos");
+  const [activeCondition, setActiveCondition] = useState("Todos");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [openFilters, setOpenFilters] = useState({ category: true, brand: true, ram: true, condition: true });
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("default");
+  const [dolarBlue, setDolarBlue] = useState(null);
   
   // State for the selected product modal
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -33,12 +40,34 @@ const Store = () => {
         setIsLoading(false);
       }
     };
+
+    const fetchDolar = async () => {
+      try {
+        const res = await fetch("https://dolarapi.com/v1/dolares/blue");
+        const data = await res.json();
+        setDolarBlue(data.venta);
+      } catch (err) {
+        console.error("Error fetching dolar blue:", err);
+      }
+    };
+
     loadProducts();
+    fetchDolar();
   }, []);
+
+  // Dynamic filter lists
+  const availableBrands = ["Todos", ...new Set(products.filter(p => p.brand).map(p => p.brand))];
+  const availableRams = ["Todos", ...new Set(products.filter(p => p.ram).map(p => p.ram))];
+  const availableConditions = ["Todos", ...new Set(products.filter(p => p.condition).map(p => p.condition))];
+
+  const toggleFilter = (key) => setOpenFilters(prev => ({ ...prev, [key]: !prev[key] }));
 
   // Reset all filters
   const handleClearFilters = () => {
     setActiveCategory("Todos");
+    setActiveBrand("Todos");
+    setActiveRam("Todos");
+    setActiveCondition("Todos");
     setSearchTerm("");
     setSortBy("default");
   };
@@ -47,16 +76,27 @@ const Store = () => {
   const filteredProducts = products
     .filter(product => {
       const matchesCategory = activeCategory === "Todos" || product.category === activeCategory;
+      const matchesBrand = activeBrand === "Todos" || product.brand === activeBrand;
+      const matchesRam = activeRam === "Todos" || product.ram === activeRam;
+      const matchesCondition = activeCondition === "Todos" || product.condition === activeCondition;
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             product.category.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesBrand && matchesRam && matchesCondition && matchesSearch;
     })
     .sort((a, b) => {
+      const getPriceInArs = (p) => {
+        let price = p.hasDiscount ? p.discountPrice : p.price;
+        if (p.currency === 'USD' && dolarBlue) {
+          price = price * dolarBlue;
+        }
+        return price;
+      };
+
       if (sortBy === "price-asc") {
-        return a.price - b.price;
+        return getPriceInArs(a) - getPriceInArs(b);
       }
       if (sortBy === "price-desc") {
-        return b.price - a.price;
+        return getPriceInArs(b) - getPriceInArs(a);
       }
       return 0; // Relevance / Default
     });
@@ -78,29 +118,110 @@ const Store = () => {
         {/* Categories Sidebar */}
         <aside className={`store-sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
-            <h3>Categorías</h3>
+            <h3>Filtros</h3>
             <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>×</button>
           </div>
-          <ul className="category-list">
-            {categories.map((cat, index) => (
-              <li key={index}>
-                <button 
-                  className={`category-btn ${activeCategory === cat ? 'active' : ''}`}
-                  onClick={() => { setActiveCategory(cat); setIsSidebarOpen(false); }}
-                >
-                  {cat}
-                </button>
-              </li>
-            ))}
-          </ul>
+          
+          <div className="filter-section">
+            <h4 onClick={() => toggleFilter('category')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              Categoría <span>{openFilters.category ? '−' : '+'}</span>
+            </h4>
+            {openFilters.category && (
+              <ul className="category-list">
+                {categories.map((cat, index) => (
+                  <li key={index}>
+                    <button 
+                      className={`category-btn ${activeCategory === cat ? 'active' : ''}`}
+                      onClick={() => { setActiveCategory(cat); setIsSidebarOpen(false); }}
+                    >
+                      {cat}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {availableBrands.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('brand')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                Marca <span>{openFilters.brand ? '−' : '+'}</span>
+              </h4>
+              {openFilters.brand && (
+                <ul className="category-list">
+                  {availableBrands.map((b, index) => (
+                    <li key={index}>
+                      <button 
+                        className={`category-btn ${activeBrand === b ? 'active' : ''}`}
+                        onClick={() => { setActiveBrand(b); setIsSidebarOpen(false); }}
+                      >
+                        {b}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {availableRams.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('ram')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                Memoria RAM <span>{openFilters.ram ? '−' : '+'}</span>
+              </h4>
+              {openFilters.ram && (
+                <ul className="category-list">
+                  {availableRams.map((r, index) => (
+                    <li key={index}>
+                      <button 
+                        className={`category-btn ${activeRam === r ? 'active' : ''}`}
+                        onClick={() => { setActiveRam(r); setIsSidebarOpen(false); }}
+                      >
+                        {r}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {availableConditions.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('condition')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                Condición <span>{openFilters.condition ? '−' : '+'}</span>
+              </h4>
+              {openFilters.condition && (
+                <ul className="category-list">
+                  {availableConditions.map((c, index) => (
+                    <li key={index}>
+                      <button 
+                        className={`category-btn ${activeCondition === c ? 'active' : ''}`}
+                        onClick={() => { setActiveCondition(c); setIsSidebarOpen(false); }}
+                      >
+                        {c}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </aside>
 
         {/* Main Content Area */}
         <main className="store-main">
           
           {/* Header */}
-          <div className="store-header">
-            <h2>Tienda Online</h2>
+          <div className="store-header" style={{ alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h2>Tienda Online</h2>
+              {dolarBlue && (
+                <div style={{ fontSize: '0.85em', color: 'var(--color-primary)', marginTop: '4px', fontWeight: 'bold' }}>
+                  Cotización Dólar Blue: ${formatPrice(dolarBlue)}
+                </div>
+              )}
+            </div>
             <button className="filter-btn" onClick={() => setIsSidebarOpen(true)}>
               <Filter size={18} /> Categorías
             </button>
@@ -135,7 +256,7 @@ const Store = () => {
             <span className="results-count">
               {filteredProducts.length} {filteredProducts.length === 1 ? 'producto encontrado' : 'productos encontrados'}
             </span>
-            {(activeCategory !== "Todos" || searchTerm || sortBy !== "default") && (
+            {(activeCategory !== "Todos" || activeBrand !== "Todos" || activeRam !== "Todos" || activeCondition !== "Todos" || searchTerm || sortBy !== "default") && (
               <button className="clear-filters-link" onClick={handleClearFilters}>
                 Limpiar filtros
               </button>
@@ -169,23 +290,46 @@ const Store = () => {
                       onClick={() => setSelectedProduct(product)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <div className="product-image">
-                        <img src={product.img} alt={product.name} />
+                      <div className="product-image" style={{ position: 'relative' }}>
+                        <img src={product.img} alt={product.name} style={!product.inStock ? { opacity: 0.6 } : {}} />
+                        {!product.inStock && (
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }}>
+                            Consultar stock
+                          </div>
+                        )}
                       </div>
                       <div className="product-info">
                         <span className="product-category">{product.category}</span>
                         <h4>{product.name}</h4>
-                        <p className="product-price">${product.price}</p>
+                        <p className="product-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          {product.hasDiscount ? (
+                            <>
+                              <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85em', lineHeight: '1', marginBottom: '2px' }}>
+                                {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.price)}
+                              </span>
+                              <strong style={{ color: 'var(--color-primary)', lineHeight: '1.2' }}>
+                                {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.discountPrice)}
+                              </strong>
+                            </>
+                          ) : (
+                            <>{product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.price)}</>
+                          )}
+                        </p>
+                        {product.hasExtra && (
+                          <div className="product-extra-tag" style={{ fontSize: '0.85em', color: 'var(--color-secondary)', marginTop: '4px' }}>
+                            + opcional {product.extraName} {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.extraPrice)}
+                          </div>
+                        )}
                         <Link 
                           to="/cotizacion" 
                           state={{ 
                             selectType: 'venta', 
-                            customMessage: `Hola! Me interesa consultar por el producto: ${product.name} (Precio: $${product.price}).\nQuisiera saber sobre el stock y formas de pago.` 
+                            customMessage: `Hola! Me interesa consultar por el producto: ${product.name} (Precio: ${product.currency === 'USD' ? 'U$D' : '$'} ${product.hasDiscount ? formatPrice(product.discountPrice) : formatPrice(product.price)}).\nQuisiera saber sobre el stock y formas de pago.` 
                           }} 
-                          className="btn btn-primary w-100 mt-2"
+                          className={`btn ${!product.inStock ? 'btn-outline' : 'btn-primary'} w-100 mt-2`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <ShoppingCart size={18} /> Consultar
+                          <ShoppingCart size={18} /> {product.inStock !== false ? 'Consultar' : 'Consultar stock'}
                         </Link>
                       </div>
                     </motion.div>
@@ -233,31 +377,47 @@ const Store = () => {
               <div className="product-modal-grid">
                 
                 {/* Image side */}
-                <div className="product-modal-image-wrapper">
-                  <img src={selectedProduct.img} alt={selectedProduct.name} />
+                <div className="product-modal-image-wrapper" style={{ position: 'relative' }}>
+                  <img src={selectedProduct.img} alt={selectedProduct.name} style={!selectedProduct.inStock ? { opacity: 0.6 } : {}} />
                   <span className="product-modal-condition-tag">{selectedProduct.condition}</span>
+                  {!selectedProduct.inStock && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '6px 12px', borderRadius: '4px', fontSize: '0.9em', fontWeight: 'bold', zIndex: 10 }}>
+                      Consultar stock
+                    </div>
+                  )}
                 </div>
 
                 {/* Content info side */}
                 <div className="product-modal-details">
                   <span className="product-modal-category">{selectedProduct.category}</span>
                   <h2>{selectedProduct.name}</h2>
-                  <p className="product-modal-price">${selectedProduct.price}</p>
+                  <p className="product-modal-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    {selectedProduct.hasDiscount ? (
+                      <>
+                        <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.7em', lineHeight: '1', marginBottom: '4px' }}>
+                          {selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.price)}
+                        </span>
+                        <strong style={{ color: 'var(--color-primary)', lineHeight: '1.2' }}>
+                          {selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.discountPrice)}
+                        </strong>
+                      </>
+                    ) : (
+                      <>{selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.price)}</>
+                    )}
+                  </p>
+                  {selectedProduct.hasExtra && (
+                    <div className="product-modal-extra" style={{ fontSize: '1.1em', color: 'var(--color-secondary)', marginBottom: '1rem', fontWeight: '500' }}>
+                      + opcional {selectedProduct.extraName} {selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.extraPrice)}
+                    </div>
+                  )}
                   
                   {/* Badges details */}
                   <div className="product-modal-badges">
                     <div className="modal-badge-item">
-                      <Shield size={18} />
-                      <div>
-                        <strong>Garantía</strong>
-                        <span>{selectedProduct.warranty}</span>
-                      </div>
-                    </div>
-                    <div className="modal-badge-item">
                       <Info size={18} />
                       <div>
                         <strong>Disponibilidad</strong>
-                        <span>{selectedProduct.stock}</span>
+                        <span>{selectedProduct.inStock !== false ? "Inmediata" : "Consultar stock"}</span>
                       </div>
                     </div>
                   </div>
@@ -284,11 +444,11 @@ const Store = () => {
                       to="/cotizacion" 
                       state={{ 
                         selectType: 'venta', 
-                        customMessage: `Hola! Me interesa consultar por el producto: ${selectedProduct.name} (Precio: $${selectedProduct.price}).\nQuisiera saber sobre el stock y formas de pago.` 
+                        customMessage: `Hola! Me interesa consultar por el producto: ${selectedProduct.name} (Precio: ${selectedProduct.currency === 'USD' ? 'U$D' : '$'} ${selectedProduct.hasDiscount ? formatPrice(selectedProduct.discountPrice) : formatPrice(selectedProduct.price)}).\nQuisiera saber sobre el stock y formas de pago.` 
                       }} 
-                      className="btn btn-primary btn-large"
+                      className={`btn ${!selectedProduct.inStock ? 'btn-outline' : 'btn-primary'} btn-large`}
                     >
-                      <ShoppingCart size={18} /> Consultar por WhatsApp
+                      <ShoppingCart size={18} /> {selectedProduct.inStock !== false ? 'Consultar por WhatsApp' : 'Consultar stock por WhatsApp'}
                     </Link>
                     <button className="btn btn-outline" onClick={() => setSelectedProduct(null)}>
                       Cerrar
