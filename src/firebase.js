@@ -39,6 +39,10 @@ if (
   }
 }
 
+const cleanUndefined = (obj) => {
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
+};
+
 // -------------------------------------------------------------
 // PRODUCTS SERVICES
 // -------------------------------------------------------------
@@ -69,10 +73,11 @@ export const getDbProducts = async () => {
 export const saveDbProduct = async (product) => {
   const { id, ...data } = product;
   const strId = String(id);
+  const cleanData = cleanUndefined(data);
 
   if (isFirebaseConfigured) {
     try {
-      await setDoc(doc(db, "products", strId), data);
+      await setDoc(doc(db, "products", strId), cleanData);
       return;
     } catch (error) {
       console.error("❌ Error saving product to Firestore, falling back to LocalStorage:", error);
@@ -163,10 +168,11 @@ export const getDbTicket = async (ticketId) => {
 
 export const saveDbTicket = async (ticket) => {
   const cleanId = String(ticket.ticketId).trim().toUpperCase();
+  const cleanData = cleanUndefined(ticket);
 
   if (isFirebaseConfigured) {
     try {
-      await setDoc(doc(db, "tickets", cleanId), ticket);
+      await setDoc(doc(db, "tickets", cleanId), cleanData);
       return;
     } catch (error) {
       console.error("❌ Error saving ticket to Firestore, falling back to LocalStorage:", error);
@@ -235,10 +241,11 @@ export const getDbTestimonials = async () => {
 export const saveDbTestimonial = async (testimonial) => {
   const { id, ...data } = testimonial;
   const strId = String(id);
+  const cleanData = cleanUndefined(data);
 
   if (isFirebaseConfigured) {
     try {
-      await setDoc(doc(db, "testimonials", strId), data);
+      await setDoc(doc(db, "testimonials", strId), cleanData);
       return;
     } catch (error) {
       console.error("❌ Error saving testimonial to Firestore, falling back to LocalStorage:", error);
@@ -308,10 +315,11 @@ export const getDbClients = async () => {
 export const saveDbClient = async (client) => {
   const { id, ...data } = client;
   const strId = String(id);
+  const cleanData = cleanUndefined(data);
 
   if (isFirebaseConfigured) {
     try {
-      await setDoc(doc(db, "clients", strId), data);
+      await setDoc(doc(db, "clients", strId), cleanData);
       return;
     } catch (error) {
       console.error("❌ Error saving client to Firestore, falling back to LocalStorage:", error);
@@ -380,10 +388,11 @@ export const getDbAppointments = async () => {
 export const saveDbAppointment = async (appointment) => {
   const { id, ...data } = appointment;
   const strId = String(id);
+  const cleanData = cleanUndefined(data);
 
   if (isFirebaseConfigured) {
     try {
-      await setDoc(doc(db, "appointments", strId), data);
+      await setDoc(doc(db, "appointments", strId), cleanData);
       return;
     } catch (error) {
       console.error("❌ Error saving appointment to Firestore, falling back to LocalStorage:", error);
