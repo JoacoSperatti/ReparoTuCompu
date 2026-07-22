@@ -451,7 +451,7 @@ const Store = () => {
                   {/* Payment Info */}
                   <div className="product-modal-payment">
                     <CreditCard size={18} />
-                    <span>Aceptamos: Transferencia, Efectivo (Descuentos) o MercadoPago.</span>
+                    <span>Aceptamos: Transferencia, Efectivo o MercadoPago.</span>
                   </div>
 
                   {/* Action buttons */}
