@@ -44,8 +44,8 @@ import {
 import './Admin.css';
 
 const CATEGORIES = [
-  "Nuevas", "Usadas", "Gamer", "Oficina", "Hogar", "Notebooks", "Escritorio", "All in one",
-  "Componentes", "Periféricos", "Monitores", "Teclados", "Parlantes", "Componentes pc", "Combos actualización"
+  "Gamer", "Oficina", "Hogar", "Notebooks", "Escritorio", "All in one",
+  "Componentes", "Periféricos", "Monitores", "Teclados", "Parlantes", "Combos actualización"
 ];
 
 const STEPS = [

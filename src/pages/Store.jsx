@@ -7,8 +7,8 @@ import { getDbProducts } from '../firebase';
 import './Store.css';
 
 const categories = [
-  "Todos", "Nuevas", "Usadas", "Gamer", "Oficina", "Hogar", "Notebooks", "Escritorio", "All in one",
-  "Componentes", "Periféricos", "Monitores", "Teclados", "Parlantes", "Componentes pc", "Combos actualización"
+  "Todos", "Gamer", "Oficina", "Hogar", "Notebooks", "Escritorio", "All in one",
+  "Componentes", "Periféricos", "Monitores", "Teclados", "Parlantes", "Combos actualización"
 ];
 
 const formatPrice = (price) => Number(price).toLocaleString('es-AR');
@@ -292,11 +292,18 @@ const Store = () => {
                     >
                       <div className="product-image" style={{ position: 'relative' }}>
                         <img src={product.img} alt={product.name} style={!product.inStock ? { opacity: 0.6 } : {}} />
-                        {!product.inStock && (
-                          <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }}>
-                            Consultar stock
-                          </div>
-                        )}
+                        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end', zIndex: 10 }}>
+                          {!product.inStock && (
+                            <div style={{ background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }}>
+                              Consultar stock
+                            </div>
+                          )}
+                          {product.condition && product.condition.toLowerCase() === 'usado' && (
+                            <div style={{ background: 'var(--color-warning, #f39c12)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }}>
+                              Usado
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="product-info">
                         <span className="product-category">{product.category}</span>
@@ -317,7 +324,7 @@ const Store = () => {
                         </p>
                         {product.hasExtra && (
                           <div className="product-extra-tag" style={{ fontSize: '0.85em', color: 'var(--color-secondary)', marginTop: '4px' }}>
-                            + opcional {product.extraName} {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.extraPrice)}
+                            {product.extraName} {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.extraPrice)}
                           </div>
                         )}
                         <Link 
@@ -379,12 +386,21 @@ const Store = () => {
                 {/* Image side */}
                 <div className="product-modal-image-wrapper" style={{ position: 'relative' }}>
                   <img src={selectedProduct.img} alt={selectedProduct.name} style={!selectedProduct.inStock ? { opacity: 0.6 } : {}} />
-                  <span className="product-modal-condition-tag">{selectedProduct.condition}</span>
-                  {!selectedProduct.inStock && (
-                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '6px 12px', borderRadius: '4px', fontSize: '0.9em', fontWeight: 'bold', zIndex: 10 }}>
-                      Consultar stock
-                    </div>
+                  {selectedProduct.condition && !['usado', 'nuevo'].includes(selectedProduct.condition.toLowerCase()) && (
+                    <span className="product-modal-condition-tag">{selectedProduct.condition}</span>
                   )}
+                  <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end', zIndex: 10 }}>
+                    {!selectedProduct.inStock && (
+                      <div style={{ background: 'var(--color-danger, #e74c3c)', color: 'white', padding: '6px 12px', borderRadius: '4px', fontSize: '0.9em', fontWeight: 'bold' }}>
+                        Consultar stock
+                      </div>
+                    )}
+                    {selectedProduct.condition && selectedProduct.condition.toLowerCase() === 'usado' && (
+                      <div style={{ background: 'var(--color-warning, #f39c12)', color: 'white', padding: '6px 12px', borderRadius: '4px', fontSize: '0.9em', fontWeight: 'bold' }}>
+                        Usado
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Content info side */}
@@ -407,7 +423,7 @@ const Store = () => {
                   </p>
                   {selectedProduct.hasExtra && (
                     <div className="product-modal-extra" style={{ fontSize: '1.1em', color: 'var(--color-secondary)', marginBottom: '1rem', fontWeight: '500' }}>
-                      + opcional {selectedProduct.extraName} {selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.extraPrice)}
+                      {selectedProduct.extraName} {selectedProduct.currency === 'USD' ? 'U$D' : '$'} {formatPrice(selectedProduct.extraPrice)}
                     </div>
                   )}
                   
