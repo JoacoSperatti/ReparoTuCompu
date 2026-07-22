@@ -75,12 +75,13 @@ const Store = () => {
   // Filter & Sort logic
   const filteredProducts = products
     .filter(product => {
-      const matchesCategory = activeCategory === "Todos" || product.category === activeCategory;
+      const matchesCategory = activeCategory === "Todos" || (Array.isArray(product.category) ? product.category.includes(activeCategory) : product.category === activeCategory);
       const matchesBrand = activeBrand === "Todos" || product.brand === activeBrand;
       const matchesRam = activeRam === "Todos" || product.ram === activeRam;
       const matchesCondition = activeCondition === "Todos" || product.condition === activeCondition;
+      const categoryString = Array.isArray(product.category) ? product.category.join(' ') : (product.category || "");
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            product.category.toLowerCase().includes(searchTerm.toLowerCase());
+                            categoryString.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCategory && matchesBrand && matchesRam && matchesCondition && matchesSearch;
     })
     .sort((a, b) => {
@@ -306,7 +307,7 @@ const Store = () => {
                         </div>
                       </div>
                       <div className="product-info">
-                        <span className="product-category">{product.category}</span>
+                        <span className="product-category">{Array.isArray(product.category) ? product.category.join(', ') : product.category}</span>
                         <h4>{product.name}</h4>
                         <p className="product-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                           {product.hasDiscount ? (
@@ -405,7 +406,7 @@ const Store = () => {
 
                 {/* Content info side */}
                 <div className="product-modal-details">
-                  <span className="product-modal-category">{selectedProduct.category}</span>
+                  <span className="product-modal-category">{Array.isArray(selectedProduct.category) ? selectedProduct.category.join(', ') : selectedProduct.category}</span>
                   <h2>{selectedProduct.name}</h2>
                   <p className="product-modal-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     {selectedProduct.hasDiscount ? (

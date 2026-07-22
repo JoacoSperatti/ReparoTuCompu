@@ -151,7 +151,7 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [prodName, setProdName] = useState('');
   const [prodPrice, setProdPrice] = useState('');
-  const [prodCategory, setProdCategory] = useState('Gamer');
+  const [prodCategory, setProdCategory] = useState(['Gamer']);
   const [prodImg, setProdImg] = useState('');
   const [prodCondition, setProdCondition] = useState('Nuevo');
   const [prodWarranty, setProdWarranty] = useState('');
@@ -230,7 +230,7 @@ const Admin = () => {
     setEditingProduct(null);
     setProdName('');
     setProdPrice('');
-    setProdCategory('Gamer');
+    setProdCategory(['Gamer']);
     setProdImg('https://images.unsplash.com/photo-1587202372634-32705e3bf49c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80');
     setProdCondition('Nuevo');
     setProdWarranty('12 meses de garantía');
@@ -251,7 +251,7 @@ const Admin = () => {
     setEditingProduct(prod);
     setProdName(prod.name);
     setProdPrice(prod.price);
-    setProdCategory(prod.category);
+    setProdCategory(Array.isArray(prod.category) ? prod.category : (prod.category ? [prod.category] : []));
     setProdImg(prod.img);
     setProdCondition(prod.condition);
     setProdWarranty(prod.warranty);
@@ -797,12 +797,26 @@ const Admin = () => {
 
                           <div className="form-row-admin">
                             <div className="form-group-admin">
-                              <label>Categoría</label>
-                              <select value={prodCategory} onChange={(e) => setProdCategory(e.target.value)}>
+                              <label>Categorías</label>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--color-border)', padding: '0.5rem', borderRadius: '4px', backgroundColor: 'var(--color-bg-base)' }}>
                                 {CATEGORIES.map((cat, idx) => (
-                                  <option key={idx} value={cat}>{cat}</option>
+                                  <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', margin: 0, fontWeight: 'normal' }}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={prodCategory.includes(cat)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setProdCategory([...prodCategory, cat]);
+                                        } else {
+                                          setProdCategory(prodCategory.filter(c => c !== cat));
+                                        }
+                                      }}
+                                      style={{ width: 'auto', margin: 0 }}
+                                    />
+                                    {cat}
+                                  </label>
                                 ))}
-                              </select>
+                              </div>
                             </div>
                             <div className="form-group-admin">
                               <label>Estado</label>
@@ -967,7 +981,7 @@ const Admin = () => {
                               <strong>{prod.name}</strong>
                               <span className="table-subtext">{prod.inStock !== false ? "Disponible" : "Sin Stock"}</span>
                             </td>
-                            <td>{prod.category}</td>
+                            <td>{Array.isArray(prod.category) ? prod.category.join(', ') : prod.category}</td>
                             <td className="price-td">{prod.currency === 'USD' ? 'U$D' : '$'} {Number(prod.price).toLocaleString('es-AR')}</td>
                             <td><span className={`badge-cond ${prod.condition.toLowerCase().includes('nuevo') ? 'cond-new' : 'cond-used'}`}>{prod.condition}</span></td>
                             <td className="col-actions">
