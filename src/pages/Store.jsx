@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, ShoppingCart, Search, X, Info, CreditCard } from 'lucide-react';
+import { Filter, ShoppingCart, Search, X, Info, CreditCard, ChevronDown, ChevronUp, Check, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { getDbProducts } from '../firebase';
 import './Store.css';
 
@@ -21,13 +21,30 @@ const Store = () => {
   const [activeRam, setActiveRam] = useState("Todos");
   const [activeCondition, setActiveCondition] = useState("Todos");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openFilters, setOpenFilters] = useState({ category: true, brand: true, ram: true, condition: true });
+  const [openFilters, setOpenFilters] = useState({ category: true, brand: true, ram: true, condition: true, price: true });
   const [searchTerm, setSearchTerm] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [dolarBlue, setDolarBlue] = useState(null);
   
   // State for the selected product modal
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
+  // Cart state
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem('shoppingCart');
+    if (savedCart) {
+      try { setCart(JSON.parse(savedCart)); } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('shoppingCart', JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -68,8 +85,77 @@ const Store = () => {
     setActiveBrand("Todos");
     setActiveRam("Todos");
     setActiveCondition("Todos");
+    setMinPrice("");
+    setMaxPrice("");
     setSearchTerm("");
     setSortBy("default");
+  };
+
+  // Move getPriceInArs outside to use in both filter and sort
+  const getPriceInArs = (p) => {
+    let price = p.hasDiscount ? p.discountPrice : p.price;
+    if (p.currency === 'USD' && dolarBlue) {
+      price = price * dolarBlue;
+    }
+    return price;
+  };
+
+  const trackProductView = (product) => {
+    try {
+      const views = JSON.parse(localStorage.getItem('productViews') || '{}');
+      if (!views[product.id]) {
+          views[product.id] = { count: 0, name: product.name };
+      }
+      views[product.id].count += 1;
+      localStorage.setItem('productViews', JSON.stringify(views));
+    } catch (e) { console.error("Error tracking view", e); }
+  };
+
+  const handleProductClick = (product) => {
+    trackProductView(product);
+    setSelectedProduct(product);
+  };
+
+  const addToCart = (product) => {
+    setCart(prevCart => {
+      const existing = prevCart.find(item => item.id === product.id);
+      if (existing) {
+        return prevCart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (id) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        return newQty > 0 ? { ...item, quantity: newQty } : item;
+      }
+      return item;
+    }));
+  };
+
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => total + (getPriceInArs(item) * item.quantity), 0);
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    
+    let message = "Hola! Quiero realizar el siguiente pedido:\n\n";
+    cart.forEach(item => {
+      message += `- ${item.quantity}x ${item.name} ($${formatPrice(getPriceInArs(item) * item.quantity)})\n`;
+    });
+    message += `\n*Total estimado:* $${formatPrice(getCartTotal())}\n\nQuisiera saber sobre el stock y formas de pago.`;
+    
+    const WHATSAPP_NUMBER = "5491122334455"; // Reemplazar con el número real de la tienda
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   // Filter & Sort logic
@@ -82,17 +168,14 @@ const Store = () => {
       const categoryString = Array.isArray(product.category) ? product.category.join(' ') : (product.category || "");
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             categoryString.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesBrand && matchesRam && matchesCondition && matchesSearch;
+      
+      const priceArs = getPriceInArs(product);
+      const matchesMinPrice = minPrice === "" || priceArs >= Number(minPrice);
+      const matchesMaxPrice = maxPrice === "" || priceArs <= Number(maxPrice);
+
+      return matchesCategory && matchesBrand && matchesRam && matchesCondition && matchesSearch && matchesMinPrice && matchesMaxPrice;
     })
     .sort((a, b) => {
-      const getPriceInArs = (p) => {
-        let price = p.hasDiscount ? p.discountPrice : p.price;
-        if (p.currency === 'USD' && dolarBlue) {
-          price = price * dolarBlue;
-        }
-        return price;
-      };
-
       if (sortBy === "price-asc") {
         return getPriceInArs(a) - getPriceInArs(b);
       }
@@ -124,88 +207,150 @@ const Store = () => {
           </div>
           
           <div className="filter-section">
-            <h4 onClick={() => toggleFilter('category')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              Categoría <span>{openFilters.category ? '−' : '+'}</span>
+            <h4 onClick={() => toggleFilter('category')} className="filter-section-title">
+              Categoría {openFilters.category ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </h4>
-            {openFilters.category && (
-              <ul className="category-list">
-                {categories.map((cat, index) => (
-                  <li key={index}>
-                    <button 
-                      className={`category-btn ${activeCategory === cat ? 'active' : ''}`}
-                      onClick={() => { setActiveCategory(cat); setIsSidebarOpen(false); }}
-                    >
-                      {cat}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AnimatePresence>
+              {openFilters.category && (
+                <motion.ul 
+                  initial={{ height: 0, opacity: 0 }} 
+                  animate={{ height: 'auto', opacity: 1 }} 
+                  exit={{ height: 0, opacity: 0 }}
+                  className="category-list"
+                >
+                  {categories.map((cat, index) => (
+                    <li key={index}>
+                      <button 
+                        className={`custom-filter-item ${activeCategory === cat ? 'active' : ''}`}
+                        onClick={() => { setActiveCategory(cat); setIsSidebarOpen(false); }}
+                      >
+                        <div className="filter-checkbox">
+                          {activeCategory === cat && <Check size={14} />}
+                        </div>
+                        <span className="filter-label">{cat}</span>
+                      </button>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+            <h4 onClick={() => toggleFilter('price')} className="filter-section-title">
+              Precio (ARS) {openFilters.price ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </h4>
+            <AnimatePresence>
+              {openFilters.price && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }} 
+                  animate={{ height: 'auto', opacity: 1 }} 
+                  exit={{ height: 0, opacity: 0 }}
+                  className="price-filter-container"
+                >
+                  <div className="price-inputs">
+                    <input type="number" placeholder="Mínimo" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
+                    <span className="price-separator">-</span>
+                    <input type="number" placeholder="Máximo" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {availableBrands.length > 1 && (
             <div className="filter-section" style={{ marginTop: '1.5rem' }}>
-              <h4 onClick={() => toggleFilter('brand')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                Marca <span>{openFilters.brand ? '−' : '+'}</span>
+              <h4 onClick={() => toggleFilter('brand')} className="filter-section-title">
+                Marca {openFilters.brand ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </h4>
-              {openFilters.brand && (
-                <ul className="category-list">
-                  {availableBrands.map((b, index) => (
-                    <li key={index}>
-                      <button 
-                        className={`category-btn ${activeBrand === b ? 'active' : ''}`}
-                        onClick={() => { setActiveBrand(b); setIsSidebarOpen(false); }}
-                      >
-                        {b}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <AnimatePresence>
+                {openFilters.brand && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableBrands.map((b, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeBrand === b ? 'active' : ''}`}
+                          onClick={() => { setActiveBrand(b); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeBrand === b && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{b}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
           {availableRams.length > 1 && (
             <div className="filter-section" style={{ marginTop: '1.5rem' }}>
-              <h4 onClick={() => toggleFilter('ram')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                Memoria RAM <span>{openFilters.ram ? '−' : '+'}</span>
+              <h4 onClick={() => toggleFilter('ram')} className="filter-section-title">
+                Memoria RAM {openFilters.ram ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </h4>
-              {openFilters.ram && (
-                <ul className="category-list">
-                  {availableRams.map((r, index) => (
-                    <li key={index}>
-                      <button 
-                        className={`category-btn ${activeRam === r ? 'active' : ''}`}
-                        onClick={() => { setActiveRam(r); setIsSidebarOpen(false); }}
-                      >
-                        {r}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <AnimatePresence>
+                {openFilters.ram && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableRams.map((r, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeRam === r ? 'active' : ''}`}
+                          onClick={() => { setActiveRam(r); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeRam === r && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{r}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
           {availableConditions.length > 1 && (
             <div className="filter-section" style={{ marginTop: '1.5rem' }}>
-              <h4 onClick={() => toggleFilter('condition')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                Condición <span>{openFilters.condition ? '−' : '+'}</span>
+              <h4 onClick={() => toggleFilter('condition')} className="filter-section-title">
+                Condición {openFilters.condition ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </h4>
-              {openFilters.condition && (
-                <ul className="category-list">
-                  {availableConditions.map((c, index) => (
-                    <li key={index}>
-                      <button 
-                        className={`category-btn ${activeCondition === c ? 'active' : ''}`}
-                        onClick={() => { setActiveCondition(c); setIsSidebarOpen(false); }}
-                      >
-                        {c}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <AnimatePresence>
+                {openFilters.condition && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableConditions.map((c, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeCondition === c ? 'active' : ''}`}
+                          onClick={() => { setActiveCondition(c); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeCondition === c && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{c}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </aside>
@@ -257,7 +402,7 @@ const Store = () => {
             <span className="results-count">
               {filteredProducts.length} {filteredProducts.length === 1 ? 'producto encontrado' : 'productos encontrados'}
             </span>
-            {(activeCategory !== "Todos" || activeBrand !== "Todos" || activeRam !== "Todos" || activeCondition !== "Todos" || searchTerm || sortBy !== "default") && (
+            {(activeCategory !== "Todos" || activeBrand !== "Todos" || activeRam !== "Todos" || activeCondition !== "Todos" || minPrice || maxPrice || searchTerm || sortBy !== "default") && (
               <button className="clear-filters-link" onClick={handleClearFilters}>
                 Limpiar filtros
               </button>
@@ -288,7 +433,7 @@ const Store = () => {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.3 }}
                       className="product-card"
-                      onClick={() => setSelectedProduct(product)}
+                      onClick={() => handleProductClick(product)}
                       style={{ cursor: 'pointer' }}
                     >
                       <div className="product-image" style={{ position: 'relative' }}>
@@ -328,17 +473,12 @@ const Store = () => {
                             {product.extraName} {product.currency === 'USD' ? 'U$D' : '$'} {formatPrice(product.extraPrice)}
                           </div>
                         )}
-                        <Link 
-                          to="/cotizacion" 
-                          state={{ 
-                            selectType: 'venta', 
-                            customMessage: `Hola! Me interesa consultar por el producto: ${product.name} (Precio: ${product.currency === 'USD' ? 'U$D' : '$'} ${product.hasDiscount ? formatPrice(product.discountPrice) : formatPrice(product.price)}).\nQuisiera saber sobre el stock y formas de pago.` 
-                          }} 
+                        <button 
                           className={`btn ${!product.inStock ? 'btn-outline' : 'btn-primary'} w-100 mt-2`}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); addToCart(product); }}
                         >
-                          <ShoppingCart size={18} /> {product.inStock !== false ? 'Consultar' : 'Consultar stock'}
-                        </Link>
+                          <ShoppingCart size={18} /> {product.inStock !== false ? 'Agregar al carrito' : 'Consultar stock'}
+                        </button>
                       </div>
                     </motion.div>
                   ))}
@@ -457,16 +597,12 @@ const Store = () => {
 
                   {/* Action buttons */}
                   <div className="product-modal-actions">
-                    <Link 
-                      to="/cotizacion" 
-                      state={{ 
-                        selectType: 'venta', 
-                        customMessage: `Hola! Me interesa consultar por el producto: ${selectedProduct.name} (Precio: ${selectedProduct.currency === 'USD' ? 'U$D' : '$'} ${selectedProduct.hasDiscount ? formatPrice(selectedProduct.discountPrice) : formatPrice(selectedProduct.price)}).\nQuisiera saber sobre el stock y formas de pago.` 
-                      }} 
+                    <button 
                       className={`btn ${!selectedProduct.inStock ? 'btn-outline' : 'btn-primary'} btn-large`}
+                      onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
                     >
-                      <ShoppingCart size={18} /> {selectedProduct.inStock !== false ? 'Consultar por WhatsApp' : 'Consultar stock por WhatsApp'}
-                    </Link>
+                      <ShoppingCart size={18} /> {selectedProduct.inStock !== false ? 'Agregar al carrito' : 'Consultar stock'}
+                    </button>
                     <button className="btn btn-outline" onClick={() => setSelectedProduct(null)}>
                       Cerrar
                     </button>
@@ -478,6 +614,90 @@ const Store = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cart Sidebar */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div 
+              className="cart-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+            />
+            <motion.div 
+              className="cart-sidebar"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              <div className="cart-header">
+                <h3>Tu Carrito</h3>
+                <button className="cart-close-btn" onClick={() => setIsCartOpen(false)}><X size={24} /></button>
+              </div>
+              
+              <div className="cart-items">
+                {cart.length === 0 ? (
+                  <div className="cart-empty">
+                    <ShoppingBag size={48} />
+                    <p>Tu carrito está vacío</p>
+                    <button className="btn btn-primary mt-3" onClick={() => setIsCartOpen(false)}>Seguir comprando</button>
+                  </div>
+                ) : (
+                  cart.map(item => (
+                    <div key={item.id} className="cart-item">
+                      <img src={item.img} alt={item.name} className="cart-item-image" />
+                      <div className="cart-item-details">
+                        <h4>{item.name}</h4>
+                        <div className="cart-item-price">${formatPrice(getPriceInArs(item))}</div>
+                        <div className="cart-item-actions">
+                          <div className="quantity-controls">
+                            <button onClick={() => updateQuantity(item.id, -1)}><Minus size={14} /></button>
+                            <span>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)}><Plus size={14} /></button>
+                          </div>
+                          <button className="cart-item-remove" onClick={() => removeFromCart(item.id)}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {cart.length > 0 && (
+                <div className="cart-footer">
+                  <div className="cart-total">
+                    <span>Total estimado:</span>
+                    <strong>${formatPrice(getCartTotal())}</strong>
+                  </div>
+                  <button className="btn btn-primary w-100 btn-large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={handleCheckout}>
+                    Finalizar Pedido
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Cart Button */}
+      {!isCartOpen && cart.length > 0 && (
+        <motion.button
+          className="floating-cart-btn"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsCartOpen(true)}
+        >
+          <ShoppingCart size={24} />
+          <span className="cart-badge">{cart.reduce((total, item) => total + item.quantity, 0)}</span>
+        </motion.button>
+      )}
     </>
   );
 };

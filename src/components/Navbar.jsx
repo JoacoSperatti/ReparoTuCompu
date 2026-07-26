@@ -69,6 +69,9 @@ const Navbar = () => {
           <NavLink to="/servicios" className={navLinkClass} onClick={closeMenu}>
             Servicios
           </NavLink>
+          <NavLink to="/blog" className={navLinkClass} onClick={closeMenu}>
+            Blog
+          </NavLink>
 
           {/* Dropdown: Gestiones */}
           <div className={`nav-dropdown-wrapper ${dropdownOpen === 'gestiones' ? 'open' : ''}`}>

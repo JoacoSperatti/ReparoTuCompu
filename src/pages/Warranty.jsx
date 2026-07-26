@@ -5,8 +5,8 @@ import './Warranty.css';
 
 const Warranty = () => {
   const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, type: 'spring', damping: 25, stiffness: 200 } }
   };
 
   return (

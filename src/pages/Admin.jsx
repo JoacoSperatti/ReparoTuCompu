@@ -21,10 +21,18 @@ import {
   Eye,
   EyeOff,
   Star,
+  Check,
+  Search,
   Users,
   Mail,
-  Gift
+  Gift,
+  TrendingUp,
+  BookOpen
 } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 import { CONFIG } from '../config';
 import { 
   getDbProducts, 
@@ -39,6 +47,9 @@ import {
   getDbClients,
   saveDbClient,
   deleteDbClient,
+  getDbPosts,
+  saveDbPost,
+  deleteDbPost,
   isFirebaseConfigured 
 } from '../firebase';
 import './Admin.css';
@@ -56,6 +67,8 @@ const STEPS = [
   { step: 5, label: "Pruebas" },
   { step: 6, label: "Listo" }
 ];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
 const Admin = () => {
   // Authentication state
@@ -113,7 +126,7 @@ const Admin = () => {
     });
   };
 
-  // Active Tab: 'store', 'tracking' or 'testimonials'
+  // Active Tab: 'store', 'tracking', 'testimonials', 'clients' or 'analytics'
   const [activeTab, setActiveTab] = useState('store');
 
   // Load products, tickets, testimonials & clients from database/localStorage
@@ -121,7 +134,31 @@ const Admin = () => {
   const [tickets, setTickets] = useState({});
   const [testimonials, setTestimonials] = useState([]);
   const [clients, setClients] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Real Analytics state
+  const [chartVisits, setChartVisits] = useState([]);
+  const [chartProducts, setChartProducts] = useState([]);
+
+  useEffect(() => {
+    // Load actual site visits
+    try {
+      const visits = JSON.parse(localStorage.getItem('siteVisits') || '{"Lun":0, "Mar":0, "Mié":0, "Jue":0, "Vie":0, "Sáb":0, "Dom":0}');
+      const daysOrder = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      setChartVisits(daysOrder.map(day => ({ name: day, visitas: visits[day] || 0 })));
+    } catch(e) {}
+
+    // Load actual product views
+    try {
+      const viewsObj = JSON.parse(localStorage.getItem('productViews') || '{}');
+      const viewsArr = Object.values(viewsObj).map(v => ({ name: v.name, value: v.count }));
+      viewsArr.sort((a,b) => b.value - a.value);
+      const topProducts = viewsArr.slice(0, 5);
+      if(topProducts.length === 0) topProducts.push({name: 'Sin datos', value: 1});
+      setChartProducts(topProducts);
+    } catch(e) {}
+  }, []);
 
   // Load data upon mounting if authenticated
   useEffect(() => {
@@ -133,7 +170,9 @@ const Admin = () => {
         const tickData = await getDbTickets();
         const testData = await getDbTestimonials();
         const clientData = await getDbClients();
+        const postData = await getDbPosts();
         setProducts(prodData);
+        setPosts(postData);
         setTickets(tickData);
         setTestimonials(testData);
         setClients(clientData);
@@ -205,9 +244,21 @@ const Admin = () => {
   const [cliCanjeSub, setCliCanjeSub] = useState(true);
   const [cliPassword, setCliPassword] = useState('123456');
 
-  // Client Filter states
+  // Filter states for lists
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [clientSubFilter, setClientSubFilter] = useState('all');
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  // Editor states (Blog)
+  const [isPostFormOpen, setIsPostFormOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [postTitle, setPostTitle] = useState('');
+  const [postExcerpt, setPostExcerpt] = useState('');
+  const [postContent, setPostContent] = useState('');
+  const [postImageUrl, setPostImageUrl] = useState('');
+  const [postCategory, setPostCategory] = useState('Hardware');
+  const [postDate, setPostDate] = useState('');
+
+  const [ticketSearchTerm, setTicketSearchTerm] = useState('');
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -639,7 +690,77 @@ const Admin = () => {
     }
   };
 
+  // BLOG OPERATIONS
+  const openAddPost = () => {
+    setEditingPost(null);
+    setPostTitle('');
+    setPostExcerpt('');
+    setPostContent('');
+    setPostImageUrl('https://images.unsplash.com/photo-1593640495253-23196b27a87f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80');
+    setPostCategory('Hardware');
+    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+    setPostDate(today);
+    setIsPostFormOpen(true);
+  };
+
+  const openEditPost = (post) => {
+    setEditingPost(post);
+    setPostTitle(post.title || '');
+    setPostExcerpt(post.excerpt || '');
+    setPostContent(post.content || '');
+    setPostImageUrl(post.imageUrl || '');
+    setPostCategory(post.category || 'Hardware');
+    setPostDate(post.date || '');
+    setIsPostFormOpen(true);
+  };
+
+  const handlePostSubmit = async (e) => {
+    e.preventDefault();
+    if (!postTitle.trim() || !postExcerpt.trim()) {
+      showAlert('Error', 'El título y el extracto son obligatorios.', 'danger');
+      return;
+    }
+
+    const postData = {
+      id: editingPost ? editingPost.id : Date.now(),
+      title: postTitle.trim(),
+      excerpt: postExcerpt.trim(),
+      content: postContent.trim(),
+      imageUrl: postImageUrl.trim(),
+      category: postCategory,
+      date: postDate || new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+    };
+
+    if (editingPost) {
+      setPosts(posts.map(p => p.id === editingPost.id ? postData : p));
+    } else {
+      setPosts([postData, ...posts]);
+    }
+
+    setIsPostFormOpen(false);
+    await saveDbPost(postData);
+    showAlert(
+      editingPost ? 'Post actualizado' : 'Post creado',
+      `El artículo "${postTitle}" se guardó con éxito.`,
+      'success'
+    );
+  };
+
+  const handleDeletePost = async (id) => {
+    const confirmed = await showConfirm(
+      '¿Eliminar artículo?',
+      'Esta acción no se puede deshacer. ¿Estás seguro de que querés eliminar este artículo del blog?',
+      'danger'
+    );
+    if (confirmed) {
+      setPosts(posts.filter(p => p.id !== id));
+      await deleteDbPost(id);
+      showAlert('Artículo eliminado', 'El artículo fue eliminado exitosamente.', 'success');
+    }
+  };
+
   return (
+
     <>
       <Helmet>
         <title>Panel de Administración | Reparo Tu Compu</title>
@@ -714,27 +835,39 @@ const Admin = () => {
               <div className="admin-tabs">
                 <button 
                   className={`admin-tab-btn ${activeTab === 'store' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('store'); setIsProductFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); }}
+                  onClick={() => { setActiveTab('store'); setIsProductFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); setIsPostFormOpen(false); }}
                 >
                   <ShoppingBag size={18} /> Gestionar Tienda ({products.length})
                 </button>
                 <button 
                   className={`admin-tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('tracking'); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); }}
+                  onClick={() => { setActiveTab('tracking'); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); setIsPostFormOpen(false); }}
                 >
                   <Wrench size={18} /> Gestionar Reparaciones ({Object.keys(tickets).length})
                 </button>
                 <button 
                   className={`admin-tab-btn ${activeTab === 'testimonials' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('testimonials'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsClientFormOpen(false); }}
+                  onClick={() => { setActiveTab('testimonials'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsClientFormOpen(false); setIsPostFormOpen(false); }}
                 >
                   <MessageSquare size={18} /> Gestionar Opiniones ({testimonials.length})
                 </button>
                 <button 
                   className={`admin-tab-btn ${activeTab === 'clients' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('clients'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); }}
+                  onClick={() => { setActiveTab('clients'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsPostFormOpen(false); }}
                 >
                   <Users size={18} /> Gestionar Clientes ({clients.length})
+                </button>
+                <button 
+                  className={`admin-tab-btn ${activeTab === 'blog' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('blog'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); }}
+                >
+                  <BookOpen size={18} /> Gestionar Blog ({posts.length})
+                </button>
+                <button 
+                  className={`admin-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('analytics'); setIsProductFormOpen(false); setIsTicketFormOpen(false); setIsTestimonialFormOpen(false); setIsClientFormOpen(false); setIsPostFormOpen(false); }}
+                >
+                  <TrendingUp size={18} /> Estadísticas
                 </button>
               </div>
 
@@ -958,6 +1091,25 @@ const Admin = () => {
                     )}
                   </AnimatePresence>
 
+                  {/* Modern Filter / Search Bar for Products */}
+                  <div className="admin-filter-bar">
+                    <div className="admin-search-wrapper">
+                      <Search size={18} className="admin-search-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar producto por nombre o categoría..." 
+                        value={productSearchTerm} 
+                        onChange={(e) => setProductSearchTerm(e.target.value)}
+                        className="admin-search-input"
+                      />
+                      {productSearchTerm && (
+                        <button className="admin-search-clear" onClick={() => setProductSearchTerm("")}>
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Products Table */}
                   <div className="table-responsive">
                     <table className="admin-table">
@@ -972,7 +1124,13 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {products.map(prod => (
+                        {products
+                          .filter(prod => {
+                            const term = productSearchTerm.toLowerCase();
+                            const catString = Array.isArray(prod.category) ? prod.category.join(' ') : prod.category;
+                            return prod.name.toLowerCase().includes(term) || catString.toLowerCase().includes(term);
+                          })
+                          .map(prod => (
                           <tr key={prod.id}>
                             <td className="col-img">
                               <img src={prod.img} alt={prod.name} className="admin-table-thumb" />
@@ -1134,6 +1292,25 @@ const Admin = () => {
                     )}
                   </AnimatePresence>
 
+                  {/* Modern Filter / Search Bar for Tickets */}
+                  <div className="admin-filter-bar">
+                    <div className="admin-search-wrapper">
+                      <Search size={18} className="admin-search-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar orden por cliente, dispositivo o código..." 
+                        value={ticketSearchTerm} 
+                        onChange={(e) => setTicketSearchTerm(e.target.value)}
+                        className="admin-search-input"
+                      />
+                      {ticketSearchTerm && (
+                        <button className="admin-search-clear" onClick={() => setTicketSearchTerm("")}>
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Tickets Table */}
                   <div className="table-responsive">
                     <table className="admin-table">
@@ -1148,7 +1325,14 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.values(tickets).map(tick => (
+                        {Object.values(tickets)
+                          .filter(tick => {
+                            const term = ticketSearchTerm.toLowerCase();
+                            return tick.clientName.toLowerCase().includes(term) ||
+                                   tick.device.toLowerCase().includes(term) ||
+                                   tick.ticketId.toLowerCase().includes(term);
+                          })
+                          .map(tick => (
                           <tr key={tick.ticketId}>
                             <td><span className="table-ticket-code">{tick.ticketId}</span></td>
                             <td><strong>{tick.clientName}</strong></td>
@@ -1496,30 +1680,42 @@ const Admin = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* Filters / Search Bar */}
-                  <div className="search-filter-row-admin" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '260px' }}>
+                  {/* Modern Filter / Search Bar for Clients */}
+                  <div className="admin-filter-bar">
+                    <div className="admin-search-wrapper">
+                      <Search size={18} className="admin-search-icon" />
                       <input 
                         type="text" 
-                        placeholder="Buscar por nombre, correo o whatsapp..." 
+                        placeholder="Buscar cliente por nombre, correo o whatsapp..." 
                         value={clientSearchTerm} 
                         onChange={(e) => setClientSearchTerm(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', backgroundColor: 'var(--color-bg-base)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)' }}
+                        className="admin-search-input"
                       />
+                      {clientSearchTerm && (
+                        <button className="admin-search-clear" onClick={() => setClientSearchTerm("")}>
+                          <X size={16} />
+                        </button>
+                      )}
                     </div>
-                    <div>
-                      <select 
-                        value={clientSubFilter} 
-                        onChange={(e) => setClientSubFilter(e.target.value)}
-                        style={{ padding: '0.75rem 1rem', borderRadius: '8px', backgroundColor: 'var(--color-bg-base)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)', cursor: 'pointer' }}
-                      >
-                        <option value="all">Suscripciones: Todas</option>
-                        <option value="maint">Suscrito: Mantenimiento</option>
-                        <option value="offers">Suscrito: Promociones</option>
-                        <option value="news">Suscrito: Newsletter</option>
-                        <option value="canje">Suscrito: Plan Canje</option>
-                        <option value="overdue">Mantenimiento: Vencidos</option>
-                      </select>
+                    <div className="admin-filter-chips">
+                      <span className="admin-filter-label">Suscripciones:</span>
+                      {[
+                        { id: 'all', label: 'Todas' },
+                        { id: 'maint', label: 'Mantenimiento' },
+                        { id: 'offers', label: 'Promos' },
+                        { id: 'news', label: 'Newsletter' },
+                        { id: 'canje', label: 'Plan Canje' },
+                        { id: 'overdue', label: 'Vencidos' }
+                      ].map(filter => (
+                        <button 
+                          key={filter.id}
+                          className={`admin-filter-chip ${clientSubFilter === filter.id ? 'active' : ''}`}
+                          onClick={() => setClientSubFilter(filter.id)}
+                        >
+                          {clientSubFilter === filter.id && <Check size={14} />}
+                          {filter.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -1670,6 +1866,202 @@ const Admin = () => {
                           })}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB BLOG: GESTIÓN DE BLOG */}
+              {activeTab === 'blog' && (
+                <div className="admin-content-box">
+                  <div className="table-actions">
+                    <h3>Listado de Artículos</h3>
+                    <button className="btn btn-primary" onClick={openAddPost}>
+                      <Plus size={16} /> Nuevo Artículo
+                    </button>
+                  </div>
+
+                  {/* Blog Form Card */}
+                  <AnimatePresence>
+                    {isPostFormOpen && (
+                      <motion.div 
+                        className="admin-form-container"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <div className="form-card-header-admin">
+                          <h4>{editingPost ? 'Editar Artículo' : 'Nuevo Artículo'}</h4>
+                          <button className="close-btn" onClick={() => setIsPostFormOpen(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handlePostSubmit} className="admin-form">
+                          <div className="form-row">
+                            <div className="form-group-admin">
+                              <label>Título del artículo</label>
+                              <input type="text" value={postTitle} onChange={(e) => setPostTitle(e.target.value)} required />
+                            </div>
+                            <div className="form-group-admin">
+                              <label>Categoría</label>
+                              <select value={postCategory} onChange={(e) => setPostCategory(e.target.value)} required>
+                                <option value="Optimización">Optimización</option>
+                                <option value="Seguridad">Seguridad</option>
+                                <option value="Hardware">Hardware</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Novedades">Novedades</option>
+                                <option value="Tutoriales">Tutoriales</option>
+                              </select>
+                            </div>
+                          </div>
+                          
+                          <div className="form-group-admin">
+                            <label>URL de Imagen de Portada</label>
+                            <input type="url" value={postImageUrl} onChange={(e) => setPostImageUrl(e.target.value)} required />
+                          </div>
+
+                          <div className="form-group-admin">
+                            <label>Extracto (breve descripción)</label>
+                            <textarea value={postExcerpt} onChange={(e) => setPostExcerpt(e.target.value)} required rows={2}></textarea>
+                          </div>
+                          
+                          <div className="form-group-admin">
+                            <label>Contenido del Artículo (texto libre)</label>
+                            <textarea value={postContent} onChange={(e) => setPostContent(e.target.value)} rows={6}></textarea>
+                          </div>
+
+                          <div className="form-actions-admin">
+                            <button type="button" className="btn btn-outline" onClick={() => setIsPostFormOpen(false)}>Cancelar</button>
+                            <button type="submit" className="btn btn-primary"><Save size={16} /> {editingPost ? 'Guardar Cambios' : 'Crear Artículo'}</button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="admin-table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Título</th>
+                          <th>Categoría</th>
+                          <th>Fecha</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {posts.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="text-center py-4 text-muted">No hay artículos publicados.</td>
+                          </tr>
+                        ) : (
+                          posts.map(post => (
+                            <tr key={post.id}>
+                              <td><span className="badge-id">#{post.id.toString().slice(-4)}</span></td>
+                              <td className="col-title">
+                                <strong>{post.title}</strong>
+                                <span className="table-subtext">{post.excerpt?.substring(0, 50)}...</span>
+                              </td>
+                              <td><span className="badge-cond cond-new">{post.category}</span></td>
+                              <td>{post.date}</td>
+                              <td className="col-actions">
+                                <button onClick={() => openEditPost(post)} className="table-btn edit-btn" title="Editar"><Edit size={16}/></button>
+                                <button onClick={() => handleDeletePost(post.id)} className="table-btn delete-btn" title="Eliminar"><Trash2 size={16}/></button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: ESTADÍSTICAS */}
+              {activeTab === 'analytics' && (
+                <div className="admin-content-box analytics-dashboard">
+                  <div className="analytics-header">
+                    <h3>Dashboard de Estadísticas</h3>
+                    <p className="text-muted">Resumen del rendimiento de tu negocio</p>
+                  </div>
+
+                  <div className="analytics-metrics-grid">
+                    <div className="metric-card">
+                      <div className="metric-icon bg-primary-light">
+                        <TrendingUp size={24} className="text-primary" />
+                      </div>
+                      <div className="metric-info">
+                        <h4>Visitas Totales (Semana)</h4>
+                        <p className="metric-value">{chartVisits.reduce((acc, curr) => acc + curr.visitas, 0)}</p>
+                        <span className="metric-trend neutral">Datos en tiempo real</span>
+                      </div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-icon bg-success-light">
+                        <Users size={24} className="text-success" />
+                      </div>
+                      <div className="metric-info">
+                        <h4>Clientes Registrados</h4>
+                        <p className="metric-value">{clients.length}</p>
+                        <span className="metric-trend positive">Base de datos actual</span>
+                      </div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-icon bg-warning-light">
+                        <Wrench size={24} className="text-warning" />
+                      </div>
+                      <div className="metric-info">
+                        <h4>Reparaciones Activas</h4>
+                        <p className="metric-value">{Object.keys(tickets).length}</p>
+                        <span className="metric-trend neutral">Tickets en curso</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="analytics-charts-grid">
+                    <div className="chart-card">
+                      <h4>Visitas al Sitio (Últimos 7 días)</h4>
+                      <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={chartVisits} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                            <XAxis dataKey="name" stroke="var(--color-text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="var(--color-text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                            <RechartsTooltip 
+                              contentStyle={{ backgroundColor: 'var(--color-bg-alt)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-text-main)' }}
+                              itemStyle={{ color: 'var(--color-primary)' }}
+                            />
+                            <Line type="monotone" dataKey="visitas" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-bg-base)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    <div className="chart-card">
+                      <h4>Servicios Más Solicitados</h4>
+                      <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={chartProducts}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={5}
+                              dataKey="value"
+                            >
+                              {chartProducts.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip 
+                              contentStyle={{ backgroundColor: 'var(--color-bg-alt)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-text-main)' }}
+                              itemStyle={{ color: 'var(--color-text-main)' }}
+                            />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--color-text-muted)' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

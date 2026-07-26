@@ -1,37 +1,20 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShieldCheck, Clock, CheckCircle2, Wrench, AlertCircle, Laptop, User, Calendar, ClipboardList } from 'lucide-react';
-import { CONFIG } from '../config';
+import { Search, ShieldCheck, CheckCircle2, AlertCircle, Calendar, User, Laptop } from 'lucide-react';
 import { getDbTicket } from '../firebase';
 import './Tracking.css';
-
-const STEPS = [
-  { step: 1, label: "Recibido", icon: ClipboardList, desc: "Equipo ingresado al sistema" },
-  { step: 2, label: "Diagnóstico", icon: Search, desc: "Evaluación técnica de fallas" },
-  { step: 3, label: "Presupuesto", icon: Clock, desc: "Esperando aprobación" },
-  { step: 4, label: "En Reparación", icon: Wrench, desc: "Manos a la obra" },
-  { step: 5, label: "Pruebas", icon: ShieldCheck, desc: "Control de calidad y estrés" },
-  { step: 6, label: "Listo", icon: CheckCircle2, desc: "Listo para retirar" }
-];
 
 const Tracking = () => {
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     const code = searchCode.trim().toUpperCase();
-    
-    if (!code) {
-      setErrorMsg("Por favor, ingresá un código de ticket.");
-      setSearchResult(null);
-      setHasSearched(false);
-      return;
-    }
+    if (!code) { setErrorMsg("Ingresá un código de ticket."); return; }
 
     setIsLoading(true);
     try {
@@ -41,255 +24,129 @@ const Tracking = () => {
         setErrorMsg('');
       } else {
         setSearchResult(null);
-        setErrorMsg("No encontramos ninguna orden con ese código. Verificá si está escrito correctamente (Ej. RTC-1002).");
+        setErrorMsg("No encontramos ninguna orden con ese código.");
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Ocurrió un error al buscar la orden. Intentalo de nuevo.");
-      setSearchResult(null);
+    } catch {
+      setErrorMsg("Error al buscar la orden.");
     } finally {
       setIsLoading(false);
-      setHasSearched(true);
     }
-  };
-
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
   return (
     <>
       <Helmet>
         <title>Seguimiento de Reparación | Reparo Tu Compu</title>
-        <meta name="description" content="Ingresá tu número de orden y verificá en tiempo real el estado de tu reparación: falla detectada, en proceso, listo para retirar." />
-        <link rel="canonical" href="https://reparotucompu.com.ar/seguimiento" />
-        <meta name="robots" content="noindex, follow" />
-        <meta property="og:title" content="Seguimentó tu Reparación | Reparo Tu Compu" />
-        <meta property="og:description" content="Verificá el estado de tu equipo en tiempo real con tu código de orden." />
-        <meta property="og:url" content="https://reparotucompu.com.ar/seguimiento" />
       </Helmet>
 
-      <section className="tracking-hero">
-        <div className="container text-center">
-          <motion.h1 
-            initial="hidden" 
-            animate="visible" 
-            variants={fadeInUp}
-          >
-            Seguimiento de Equipo
+      <section className="tracking-hero-premium">
+        <div className="container text-center relative z-10">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="gradient-text">
+            Rastreador de Equipos
           </motion.h1>
-          <motion.p 
-            className="tracking-subtitle"
-            initial="hidden" 
-            animate="visible" 
-            variants={fadeInUp}
-            transition={{ delay: 0.1 }}
-          >
-            Mantenete al tanto del proceso de reparación de tu PC o Notebook ingresando tu código de ticket.
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="tracking-subtitle">
+            Seguí el estado de tu reparación en tiempo real con calidad premium.
           </motion.p>
         </div>
       </section>
 
-      <section className="tracking-content-section container">
-        <div className="search-container-box">
-          <form className="search-form" onSubmit={handleSearch}>
+      <section className="tracking-content container">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="search-glass-container">
+          <form className="search-form-premium" onSubmit={handleSearch}>
             <div className="search-input-wrapper">
-              <Search className="search-icon" size={20} />
+              <Search className="search-icon" size={24} />
               <input 
                 type="text" 
-                placeholder="Ej. RTC-1002" 
+                placeholder="Ingresá tu código (Ej: RTC-1002)" 
                 value={searchCode}
                 onChange={(e) => setSearchCode(e.target.value)}
-                className="search-input"
               />
             </div>
-            <button type="submit" className="btn btn-primary search-btn">Consultar Estado</button>
+            <button type="submit" className="btn btn-primary btn-glow">Consultar Estado</button>
           </form>
-        </div>
+        </motion.div>
 
         <AnimatePresence mode="wait">
           {isLoading && (
-            <motion.div 
-              key="loading-box"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-4"
-              style={{ color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}
-            >
-              <div className="loading-spinner"></div>
-              <p>Buscando orden de reparación...</p>
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-card text-center py-5 mt-5">
+              <div className="spinner"></div>
             </motion.div>
           )}
 
           {errorMsg && !isLoading && (
-            <motion.div 
-              key="error-box"
-              className="error-message-box"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <AlertCircle size={24} />
-              <span>{errorMsg}</span>
+            <motion.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="glass-alert error mt-5">
+              <AlertCircle size={24} /> {errorMsg}
             </motion.div>
           )}
 
-          {hasSearched && searchResult && !isLoading && (
-            <motion.div 
-              key={searchResult.ticketId}
-              className="result-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              {/* Header Info */}
+          {searchResult && !isLoading && (
+            <motion.div key="result" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="tracking-result-glass mt-5">
               <div className="result-header">
-                <div className="header-title-section">
-                  <span className="ticket-badge">{searchResult.ticketId}</span>
+                <div>
+                  <span className="badge badge-primary">{searchResult.ticketId}</span>
                   <h2>{searchResult.device}</h2>
                 </div>
-                <div className="header-delivery">
-                  <span className="delivery-label">Entrega estimada:</span>
-                  <span className="delivery-date">{searchResult.estimatedDelivery}</span>
+                <div className="delivery-box">
+                  <span>Entrega Estimada</span>
+                  <strong>{searchResult.estimatedDelivery}</strong>
                 </div>
               </div>
 
-              {/* Client and Info Grid */}
-              <div className="info-grid">
+              <div className="info-grid-glass mt-4">
                 <div className="info-item">
-                  <div className="info-item-title">
-                    <User size={18} />
-                    <span>Cliente</span>
+                  <User size={20} className="text-primary"/>
+                  <div>
+                    <label>Cliente</label>
+                    <p>{searchResult.clientName}</p>
                   </div>
-                  <p>{searchResult.clientName}</p>
                 </div>
                 <div className="info-item">
-                  <div className="info-item-title">
-                    <Calendar size={18} />
-                    <span>Fecha de Ingreso</span>
+                  <Calendar size={20} className="text-primary"/>
+                  <div>
+                    <label>Ingreso</label>
+                    <p>{searchResult.entryDate}</p>
                   </div>
-                  <p>{searchResult.entryDate}</p>
                 </div>
                 <div className="info-item">
-                  <div className="info-item-title">
-                    <Laptop size={18} />
-                    <span>Presupuesto Estimado</span>
+                  <Laptop size={20} className="text-primary"/>
+                  <div>
+                    <label>Presupuesto</label>
+                    <p className="text-success font-bold">{searchResult.priceEstimate}</p>
                   </div>
-                  <p className="price-tag">{searchResult.priceEstimate}</p>
                 </div>
               </div>
 
-              <div className="diagnostic-summary">
+              <div className="diagnostic-glass mt-4">
                 <h4>Falla reportada:</h4>
                 <p>{searchResult.description}</p>
               </div>
 
-              {/* Progress Timeline */}
-              <div className="timeline-container">
-                <h3 className="timeline-title">Estado de la Reparación</h3>
-                
-                {/* Horizontal Progress Bar for Desktop */}
-                <div className="progress-bar-wrapper">
-                  <div className="progress-bar-bg">
-                    <div 
-                      className="progress-bar-fill" 
-                      style={{ width: `${((searchResult.currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="progress-steps">
-                    {STEPS.map((step) => {
-                      const StepIcon = step.icon;
-                      const isCompleted = step.step < searchResult.currentStep;
-                      const isCurrent = step.step === searchResult.currentStep;
-                      
-                      return (
-                        <div 
-                          key={step.step} 
-                          className={`step-indicator ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''}`}
-                        >
-                          <div className="step-icon-circle">
-                            <StepIcon size={20} />
-                          </div>
-                          <span className="step-label">{step.label}</span>
-                        </div>
-                      );
-                    })}
+              <div className="timeline-premium mt-5">
+                <h3>Estado Actual</h3>
+                <div className="progress-bar-glass mt-3" style={{ height: '12px' }}>
+                  <motion.div 
+                    className={`progress-fill ${searchResult.currentStep === 6 ? 'bg-success' : 'bg-primary'}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((searchResult.currentStep - 1) / 5) * 100}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                  ></motion.div>
+                </div>
+                <div className="progress-labels mt-2">
+                  <span>Recibido</span>
+                  <span>En Taller</span>
+                  <span>Entregado</span>
+                </div>
+              </div>
+
+              {searchResult.currentStep === 6 && (
+                <div className="warranty-box mt-5">
+                  <ShieldCheck size={24} className="text-success" />
+                  <div>
+                    <h4>Equipo Listo y Probado</h4>
+                    <p>Tu reparación cuenta con 90 días de garantía. ¡Te esperamos para retirar!</p>
                   </div>
                 </div>
-
-                {/* Vertical Timeline for Mobile */}
-                <div className="mobile-timeline">
-                  {STEPS.map((step) => {
-                    const StepIcon = step.icon;
-                    const isCompleted = step.step < searchResult.currentStep;
-                    const isCurrent = step.step === searchResult.currentStep;
-
-                    return (
-                      <div 
-                        key={step.step} 
-                        className={`mobile-step-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''}`}
-                      >
-                        <div className="mobile-step-line"></div>
-                        <div className="mobile-step-circle">
-                          <StepIcon size={16} />
-                        </div>
-                        <div className="mobile-step-content">
-                          <h4>{step.label}</h4>
-                          <p>{step.desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Latest Status Notes */}
-              <div className="status-notes-box">
-                <h4>Nota técnica actual:</h4>
-                <p className="notes-text">{searchResult.statusNotes}</p>
-              </div>
-
-              {/* Timeline History log */}
-              <div className="history-log">
-                <h4>Registro de Actividad</h4>
-                <div className="history-list">
-                  {searchResult.history.slice().reverse().map((item, idx) => (
-                    <div key={idx} className="history-log-item">
-                      <span className="history-date">{item.date}</span>
-                      <span className="history-text">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Direct Query Call to Action */}
-              <div className="tracking-cta">
-                <p>¿Querés comunicarte con el técnico a cargo por esta orden?</p>
-                <a 
-                  href={`https://api.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=Hola! Quería consultar sobre el estado del ticket ${searchResult.ticketId} (${searchResult.device}).`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn btn-outline"
-                >
-                  Consultar vía WhatsApp
-                </a>
-              </div>
-            </motion.div>
-          )}
-
-          {hasSearched && !searchResult && !errorMsg && !isLoading && (
-            <motion.div 
-              key="not-found"
-              className="error-message-box"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <AlertCircle size={24} />
-              <span>No se encontró la orden técnica especificada.</span>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

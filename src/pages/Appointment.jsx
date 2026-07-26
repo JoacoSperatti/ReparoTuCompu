@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Laptop,
   AlertTriangle,
+  MailCheck,
 } from 'lucide-react';
 import { saveDbAppointment, getDbAppointments } from '../firebase';
 import { CONFIG } from '../config';
@@ -61,8 +62,18 @@ const today = new Date();
 today.setHours(0, 0, 0, 0);
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, type: 'spring', damping: 25, stiffness: 300 } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -90,6 +101,7 @@ const Appointment = () => {
 
   // Confirmed appointment
   const [confirmed, setConfirmed] = useState(null);
+  const [showEmailToast, setShowEmailToast] = useState(false);
 
   // Load all booked slots once
   const loadBookedSlots = useCallback(async () => {
@@ -178,6 +190,8 @@ const Appointment = () => {
       await saveDbAppointment(appointment);
       setConfirmed(appointment);
       setStep(4);
+      setShowEmailToast(true);
+      setTimeout(() => setShowEmailToast(false), 5000);
       // Update local booked slots
       setBookedSlots(prev => ({
         ...prev,
@@ -470,6 +484,27 @@ const Appointment = () => {
             </motion.div>
           )}
 
+        </AnimatePresence>
+
+        {/* Email Notification Toast */}
+        <AnimatePresence>
+          {showEmailToast && (
+            <motion.div 
+              className="email-toast"
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <div className="email-toast-icon">
+                <MailCheck size={24} />
+              </div>
+              <div className="email-toast-content">
+                <strong>¡Confirmación enviada!</strong>
+                <p>Te enviamos un email con los detalles de tu turno.</p>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </section>
     </>

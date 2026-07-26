@@ -430,3 +430,74 @@ export const deleteDbAppointment = async (id) => {
     localStorage.setItem("rtc_appointments", JSON.stringify(updated));
   }
 };
+
+// -------------------------------------------------------------
+// BLOG POSTS SERVICES
+// -------------------------------------------------------------
+
+export const getDbPosts = async () => {
+  if (isFirebaseConfigured) {
+    try {
+      const querySnapshot = await getDocs(collection(db, "posts"));
+      const list = [];
+      querySnapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      // Sort by creation ID descending
+      return list.sort((a, b) => Number(b.id) - Number(a.id));
+    } catch (error) {
+      console.error("❌ Error fetching posts from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_posts");
+  if (saved) return JSON.parse(saved);
+  localStorage.setItem("rtc_posts", JSON.stringify([]));
+  return [];
+};
+
+export const saveDbPost = async (post) => {
+  const { id, ...data } = post;
+  const strId = String(id);
+  const cleanData = cleanUndefined(data);
+
+  if (isFirebaseConfigured) {
+    try {
+      await setDoc(doc(db, "posts", strId), cleanData);
+      return;
+    } catch (error) {
+      console.error("❌ Error saving post to Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_posts");
+  const posts = saved ? JSON.parse(saved) : [];
+  const existing = posts.findIndex(p => String(p.id) === strId);
+  let updated;
+  if (existing >= 0) {
+    updated = posts.map(p => String(p.id) === strId ? post : p);
+  } else {
+    updated = [post, ...posts];
+  }
+  localStorage.setItem("rtc_posts", JSON.stringify(updated));
+};
+
+export const deleteDbPost = async (id) => {
+  const strId = String(id);
+
+  if (isFirebaseConfigured) {
+    try {
+      await deleteDoc(doc(db, "posts", strId));
+      return;
+    } catch (error) {
+      console.error("❌ Error deleting post from Firestore, falling back to LocalStorage:", error);
+    }
+  }
+
+  const saved = localStorage.getItem("rtc_posts");
+  if (saved) {
+    const posts = JSON.parse(saved);
+    const updated = posts.filter(p => String(p.id) !== strId);
+    localStorage.setItem("rtc_posts", JSON.stringify(updated));
+  }
+};

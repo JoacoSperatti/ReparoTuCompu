@@ -1,53 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, 
-  Mail, 
-  Phone, 
-  Cpu, 
-  Lock, 
-  Calendar, 
-  Bell, 
-  LogOut, 
-  Wrench, 
-  Gift,
-  RefreshCw,
-  Notebook
+  User, Mail, Phone, Cpu, Lock, Calendar, LogOut, Wrench, ShieldCheck, 
+  CheckCircle2, AlertCircle, PlayCircle, Settings
 } from 'lucide-react';
 import { getDbClients, saveDbClient, getDbTickets } from '../firebase';
 import { CONFIG } from '../config';
 import './Auth.css';
 
 const Auth = () => {
-  // Authentication states
   const [isLogin, setIsLogin] = useState(true);
   const [loggedClient, setLoggedClient] = useState(null);
-
-  // Form inputs
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [device, setDevice] = useState('');
-  const [lastMaintenance, setLastMaintenance] = useState(new Date().toISOString().split('T')[0]);
-
-  // Preference switches
-  const [maintenanceSub, setMaintenanceSub] = useState(true);
-  const [offersSub, setOffersSub] = useState(true);
-  const [newsSub, setNewsSub] = useState(true);
-  const [canjeSub, setCanjeSub] = useState(true);
-
-  // Message states
   const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
-  // Loaded client data
+  
   const [clientTickets, setClientTickets] = useState([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
 
-  // Check session storage on mount
   useEffect(() => {
     const saved = localStorage.getItem('rtc_logged_client');
     if (saved) {
@@ -57,571 +31,214 @@ const Auth = () => {
     }
   }, []);
 
-  // Fetch tickets that match the client name
   const fetchTicketsForClient = async (client) => {
     setIsLoadingTickets(true);
     try {
       const allTickets = await getDbTickets();
       const clientNameLower = client.name.toLowerCase().trim();
-      
-      const matched = Object.values(allTickets).filter(ticket => {
-        const ticketNameLower = (ticket.clientName || '').toLowerCase().trim();
-        return ticketNameLower.includes(clientNameLower) || clientNameLower.includes(ticketNameLower);
-      });
+      const matched = Object.values(allTickets).filter(ticket => 
+        (ticket.clientName || '').toLowerCase().trim().includes(clientNameLower)
+      );
       setClientTickets(matched);
     } catch (error) {
-      console.error("Error fetching client tickets:", error);
+      console.error(error);
     } finally {
       setIsLoadingTickets(false);
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    setSuccessMsg('');
-
     try {
       const clients = await getDbClients();
-      const found = clients.find(
-        c => c.email.toLowerCase().trim() === email.toLowerCase().trim() && c.password === password
-      );
-
-      if (found) {
-        setLoggedClient(found);
-        localStorage.setItem('rtc_logged_client', JSON.stringify(found));
-        setSuccessMsg('¡Sesión iniciada con éxito!');
-        fetchTicketsForClient(found);
+      if (isLogin) {
+        const found = clients.find(c => c.email.toLowerCase() === email.toLowerCase() && c.password === password);
+        if (found) {
+          setLoggedClient(found);
+          localStorage.setItem('rtc_logged_client', JSON.stringify(found));
+          fetchTicketsForClient(found);
+        } else {
+          setErrorMsg('Credenciales incorrectas');
+        }
       } else {
-        setErrorMsg('Correo electrónico o contraseña incorrectos.');
+        if (!name || !email || !password || !phone) {
+          setErrorMsg('Completá todos los campos'); return;
+        }
+        const exists = clients.some(c => c.email.toLowerCase() === email.toLowerCase());
+        if (exists) {
+          setErrorMsg('El email ya está registrado'); return;
+        }
+        const newClient = {
+          id: Date.now(), name, email, phone, password,
+          device: 'No especificado',
+          lastMaintenance: new Date().toISOString().split('T')[0]
+        };
+        await saveDbClient(newClient);
+        setLoggedClient(newClient);
+        localStorage.setItem('rtc_logged_client', JSON.stringify(newClient));
+        setClientTickets([]);
       }
-    } catch {
-      setErrorMsg('Ocurrió un error al iniciar sesión. Inténtalo de nuevo.');
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
-      setErrorMsg('Por favor completa todos los campos requeridos.');
-      return;
-    }
-
-    try {
-      const clients = await getDbClients();
-      const emailExists = clients.some(c => c.email.toLowerCase().trim() === email.toLowerCase().trim());
-
-      if (emailExists) {
-        setErrorMsg('Este correo electrónico ya está registrado.');
-        return;
-      }
-
-      const newClient = {
-        id: Date.now(),
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        device: device.trim() || 'No especificado',
-        password: password, // For simplicity of this tech demo/project
-        lastMaintenance: lastMaintenance || new Date().toISOString().split('T')[0],
-        preferences: {
-          maintenanceSub,
-          offersSub,
-          newsSub,
-          canjeSub
-        },
-        registeredAt: new Date().toLocaleDateString('es-AR')
-      };
-
-      await saveDbClient(newClient);
-      setLoggedClient(newClient);
-      localStorage.setItem('rtc_logged_client', JSON.stringify(newClient));
-      setSuccessMsg('¡Registro exitoso! Sesión iniciada.');
-      setClientTickets([]); // New client has no tickets initially
-    } catch {
-      setErrorMsg('Ocurrió un error al registrarte. Inténtalo de nuevo.');
+    } catch (err) {
+      setErrorMsg('Error de conexión');
     }
   };
 
   const handleLogout = () => {
     setLoggedClient(null);
     localStorage.removeItem('rtc_logged_client');
-    setEmail('');
-    setPassword('');
-    setName('');
-    setPhone('');
-    setDevice('');
-    setSuccessMsg('Sesión cerrada correctamente.');
+    setEmail(''); setPassword('');
   };
 
-  const handleUpdatePreferences = async (prefType, val) => {
-    if (!loggedClient) return;
-
-    const updatedClient = {
-      ...loggedClient,
-      preferences: {
-        ...loggedClient.preferences,
-        [prefType]: val
-      }
-    };
-
-    setLoggedClient(updatedClient);
-    localStorage.setItem('rtc_logged_client', JSON.stringify(updatedClient));
-    await saveDbClient(updatedClient);
+  const containerVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
-
-  // Helper: Maintenance math (6 months)
-  const getMaintenanceStatus = (lastDateStr) => {
-    if (!lastDateStr) return { label: 'Desconocido', color: 'text-muted' };
-    const lastDate = new Date(lastDateStr);
-    const nextDate = new Date(lastDate);
-    nextDate.setMonth(nextDate.getMonth() + 6);
-
-    const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    const formattedNext = nextDate.toLocaleDateString('es-AR');
-
-    if (diffDays < 0) {
-      return { 
-        label: `Vencido el ${formattedNext} (Hacer ya)`, 
-        daysLeft: diffDays, 
-        isOverdue: true, 
-        color: 'var(--color-danger)' 
-      };
-    } else if (diffDays <= 15) {
-      return { 
-        label: `Vence el ${formattedNext} (Pronto)`, 
-        daysLeft: diffDays, 
-        isSoon: true, 
-        color: 'var(--color-warning)' 
-      };
-    } else {
-      return { 
-        label: `${formattedNext} (En fecha)`, 
-        daysLeft: diffDays, 
-        color: 'var(--color-success)' 
-      };
-    }
-  };
-
-  const maintStatus = loggedClient ? getMaintenanceStatus(loggedClient.lastMaintenance) : null;
 
   return (
     <>
       <Helmet>
-        <title>{loggedClient ? 'Área de Clientes' : 'Acceso Clientes'} | Reparo Tu Compu</title>
-        <meta name="description" content="Iniciá sesión en tu cuenta de Reparo Tu Compu para ver el estado de tus reparaciones, fechas de mantenimiento y ofertas exclusivas." />
-        <link rel="canonical" href="https://reparotucompu.com.ar/acceso-clientes" />
-        <meta name="robots" content="noindex, nofollow" />
-        <meta property="og:title" content="Área de Clientes | Reparo Tu Compu" />
-        <meta property="og:description" content="Accedé a tu cuenta para ver el estado de tus reparaciones y mantenimientos." />
-        <meta property="og:url" content="https://reparotucompu.com.ar/acceso-clientes" />
+        <title>{loggedClient ? 'Portal de Cliente' : 'Acceso Clientes'} | Reparo Tu Compu</title>
       </Helmet>
 
-      <section className="auth-hero">
-        <div className="container text-center">
-          <motion.h1
-            key={loggedClient ? 'logged' : 'guest'}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            {loggedClient ? `¡Bienvenido, ${loggedClient.name.split(' ')[0]}!` : 'Área de Clientes'}
+      <section className="portal-hero">
+        <div className="portal-hero-bg"></div>
+        <div className="container text-center relative z-10">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="gradient-text">
+            {loggedClient ? `Hola, ${loggedClient.name.split(' ')[0]}` : 'Portal de Clientes'}
           </motion.h1>
-          <motion.p
-            key={loggedClient ? 'logged-sub' : 'guest-sub'}
-            className="auth-hero-subtitle"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            {loggedClient ? 'Administrá tu perfil, seguí tus reparaciones y gestioná tus preferencias.' : 'Iniciá sesión o registrate para gestionar tus reparaciones y recibir recordatorios de mantenimiento.'}
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="portal-subtitle">
+            {loggedClient ? 'Tus reparaciones, presupuestos y garantías en un solo lugar.' : 'Ingresá para seguir el estado de tus reparaciones en tiempo real.'}
           </motion.p>
         </div>
       </section>
 
-      <section className="auth-content-section container">
+      <section className="portal-content container">
         <AnimatePresence mode="wait">
           {!loggedClient ? (
-            /* AUTHENTICATION FORM (LOGIN / REGISTER) */
-            <motion.div 
-              key="auth-forms"
-              className="auth-box"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="auth-tabs">
-                <button 
-                  className={`auth-tab-btn ${isLogin ? 'active' : ''}`}
-                  onClick={() => { setIsLogin(true); setErrorMsg(''); }}
-                >
-                  Iniciar Sesión
-                </button>
-                <button 
-                  className={`auth-tab-btn ${!isLogin ? 'active' : ''}`}
-                  onClick={() => { setIsLogin(false); setErrorMsg(''); }}
-                >
-                  Registrarse
-                </button>
+            <motion.div key="auth" variants={containerVariants} initial="hidden" animate="visible" exit="hidden" className="glass-auth-box">
+              <div className="auth-switcher">
+                <button className={isLogin ? 'active' : ''} onClick={() => setIsLogin(true)}>Ingresar</button>
+                <button className={!isLogin ? 'active' : ''} onClick={() => setIsLogin(false)}>Registrarse</button>
               </div>
-
-              <div className="auth-card-body">
-                <h3>{isLogin ? '¡Qué bueno verte de nuevo!' : 'Unite a nuestra comunidad de clientes'}</h3>
-                <p className="auth-sub">
-                  {isLogin 
-                    ? 'Accedé para ver el estado de tus reparaciones, fechas de mantenimiento y promociones exclusivas.' 
-                    : 'Registrá tus datos para recibir recordatorios automáticos de mantenimiento cada 6 meses, novedades y ofertas de plan canje.'}
-                </p>
-
-                {errorMsg && <div className="auth-alert alert-error">{errorMsg}</div>}
-                {successMsg && <div className="auth-alert alert-success">{successMsg}</div>}
-
-                {isLogin ? (
-                  /* LOGIN FORM */
-                  <form onSubmit={handleLogin} className="auth-form">
-                    <div className="form-group-auth">
-                      <label><Mail size={16} /> Correo Electrónico</label>
-                      <input 
-                        type="email" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="ejemplo@correo.com"
-                        required
-                      />
+              <div className="auth-body">
+                {errorMsg && <div className="glass-alert error"><AlertCircle size={18}/> {errorMsg}</div>}
+                
+                <form onSubmit={handleAuth} className="glass-form">
+                  {!isLogin && (
+                    <div className="form-group-glass">
+                      <label><User size={16}/> Nombre Completo</label>
+                      <input type="text" value={name} onChange={e=>setName(e.target.value)} required />
                     </div>
-
-                    <div className="form-group-auth">
-                      <label><Lock size={16} /> Contraseña</label>
-                      <input 
-                        type="password" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                      />
+                  )}
+                  <div className="form-group-glass">
+                    <label><Mail size={16}/> Email</label>
+                    <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+                  </div>
+                  {!isLogin && (
+                    <div className="form-group-glass">
+                      <label><Phone size={16}/> Teléfono</label>
+                      <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} required />
                     </div>
-
-                    <button type="submit" className="btn btn-primary w-100 mt-3">Ingresar al Área de Clientes</button>
-                  </form>
-                ) : (
-                  /* REGISTER FORM */
-                  <form onSubmit={handleRegister} className="auth-form">
-                    <div className="form-grid-auth">
-                      <div className="form-group-auth">
-                        <label><User size={16} /> Nombre y Apellido *</label>
-                        <input 
-                          type="text" 
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Juan Pérez"
-                          required
-                        />
-                      </div>
-
-                      <div className="form-group-auth">
-                        <label><Mail size={16} /> Correo Electrónico *</label>
-                        <input 
-                          type="email" 
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="juan@correo.com"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-grid-auth">
-                      <div className="form-group-auth">
-                        <label><Phone size={16} /> WhatsApp / Celular *</label>
-                        <input 
-                          type="tel" 
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+54 9 11 1234 5678"
-                          required
-                        />
-                      </div>
-
-                      <div className="form-group-auth">
-                        <label><Lock size={16} /> Contraseña *</label>
-                        <input 
-                          type="password" 
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-grid-auth">
-                      <div className="form-group-auth">
-                        <label><Cpu size={16} /> Tu Computadora (Modelo/Specs)</label>
-                        <input 
-                          type="text" 
-                          value={device}
-                          onChange={(e) => setDevice(e.target.value)}
-                          placeholder="Ej. Asus Rog, Ryzen 5, 16GB"
-                        />
-                      </div>
-
-                      <div className="form-group-auth">
-                        <label><Calendar size={16} /> Último Mantenimiento Preventivo</label>
-                        <input 
-                          type="date" 
-                          value={lastMaintenance}
-                          onChange={(e) => setLastMaintenance(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="preferences-section">
-                      <h4><Bell size={18} /> Suscripción de Novedades y Alertas</h4>
-                      <p>Elegí qué tipo de avisos querés recibir por mail o WhatsApp:</p>
-                      
-                      <div className="pref-item">
-                        <input 
-                          type="checkbox" 
-                          id="pref-maintenance" 
-                          checked={maintenanceSub} 
-                          onChange={(e) => setMaintenanceSub(e.target.checked)} 
-                        />
-                        <label htmlFor="pref-maintenance">
-                          <strong>Mantenimiento Programado (Recomendado)</strong>
-                          <span>Te avisamos cada 6 meses cuando haga falta una limpieza y cambio de pasta térmica para cuidar tus componentes.</span>
-                        </label>
-                      </div>
-
-                      <div className="pref-item">
-                        <input 
-                          type="checkbox" 
-                          id="pref-offers" 
-                          checked={offersSub} 
-                          onChange={(e) => setOffersSub(e.target.checked)} 
-                        />
-                        <label htmlFor="pref-offers">
-                          <strong>Ofertas y Promociones Exclusivas</strong>
-                          <span>Recibí descuentos especiales en reparaciones y componentes de hardware.</span>
-                        </label>
-                      </div>
-
-                      <div className="pref-item">
-                        <input 
-                          type="checkbox" 
-                          id="pref-news" 
-                          checked={newsSub} 
-                          onChange={(e) => setNewsSub(e.target.checked)} 
-                        />
-                        <label htmlFor="pref-news">
-                          <strong>Novedades & Newsletter</strong>
-                          <span>Enterate de guías de seguridad, optimización y noticias tecnológicas de nuestro blog.</span>
-                        </label>
-                      </div>
-
-                      <div className="pref-item">
-                        <input 
-                          type="checkbox" 
-                          id="pref-canje" 
-                          checked={canjeSub} 
-                          onChange={(e) => setCanjeSub(e.target.checked)} 
-                        />
-                        <label htmlFor="pref-canje">
-                          <strong>Plan Canje & Recambio de Equipamiento</strong>
-                          <span>Recibí ofertas personalizadas cuando consideremos que es buen momento para cambiar tu máquina vieja por una notebook nueva.</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <button type="submit" className="btn btn-primary w-100 mt-4">Registrarse e Ingresar</button>
-                  </form>
-                )}
+                  )}
+                  <div className="form-group-glass">
+                    <label><Lock size={16}/> Contraseña</label>
+                    <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+                  </div>
+                  <button type="submit" className="btn btn-primary w-100 glow-effect mt-4">
+                    {isLogin ? 'Acceder al Portal' : 'Crear Cuenta'}
+                  </button>
+                </form>
               </div>
             </motion.div>
           ) : (
-            /* CLIENT DASHBOARD (LOGGED IN AREA) */
-            <motion.div 
-              key="client-dashboard"
-              className="client-dashboard-grid"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Left Column: Client Profile & Subscriptions */}
-              <div className="client-sidebar">
-                <div className="client-profile-card">
-                  <div className="client-avatar">
-                    <User size={40} />
-                  </div>
+            <motion.div key="dashboard" variants={containerVariants} initial="hidden" animate="visible" className="portal-dashboard">
+              
+              {/* Dashboard Sidebar */}
+              <div className="dashboard-sidebar">
+                <div className="glass-card profile-card">
+                  <div className="profile-avatar"><User size={40}/></div>
                   <h3>{loggedClient.name}</h3>
-                  <span className="client-email">{loggedClient.email}</span>
-                  <span className="client-phone">{loggedClient.phone}</span>
-
-                  <hr className="divider" />
-
-                  <div className="client-device-info">
-                    <h4><Cpu size={16} /> Mi Computadora</h4>
-                    <p>{loggedClient.device || 'No especificada'}</p>
-                  </div>
-
-                  <button onClick={handleLogout} className="btn btn-outline w-100 mt-4 logout-btn">
-                    <LogOut size={16} /> Cerrar Sesión
+                  <p>{loggedClient.email}</p>
+                  <button onClick={handleLogout} className="btn btn-outline w-100 mt-4 border-radius-xl">
+                    <LogOut size={16}/> Salir
                   </button>
                 </div>
 
-                <div className="client-preferences-card">
-                  <h4>Mis Suscripciones</h4>
-                  <div className="sidebar-pref-list">
-                    <label className="sidebar-pref-item">
-                      <input 
-                        type="checkbox" 
-                        checked={loggedClient.preferences?.maintenanceSub ?? true} 
-                        onChange={(e) => handleUpdatePreferences('maintenanceSub', e.target.checked)} 
-                      />
-                      <span>Mantenimiento cada 6 meses</span>
-                    </label>
-
-                    <label className="sidebar-pref-item">
-                      <input 
-                        type="checkbox" 
-                        checked={loggedClient.preferences?.offersSub ?? true} 
-                        onChange={(e) => handleUpdatePreferences('offersSub', e.target.checked)} 
-                      />
-                      <span>Promociones y Descuentos</span>
-                    </label>
-
-                    <label className="sidebar-pref-item">
-                      <input 
-                        type="checkbox" 
-                        checked={loggedClient.preferences?.newsSub ?? true} 
-                        onChange={(e) => handleUpdatePreferences('newsSub', e.target.checked)} 
-                      />
-                      <span>Newsletter mensual</span>
-                    </label>
-
-                    <label className="sidebar-pref-item">
-                      <input 
-                        type="checkbox" 
-                        checked={loggedClient.preferences?.canjeSub ?? true} 
-                        onChange={(e) => handleUpdatePreferences('canjeSub', e.target.checked)} 
-                      />
-                      <span>Alertas de Plan Canje</span>
-                    </label>
-                  </div>
+                <div className="glass-card mt-4 promo-card">
+                  <h4>¿Necesitas otra reparación?</h4>
+                  <p>Solicitá un nuevo presupuesto rápido.</p>
+                  <a href="/cotizacion" className="btn btn-primary w-100 glow-effect mt-2">Nueva Consulta</a>
                 </div>
               </div>
 
-              {/* Right Column: Repairs tracking & Alerts */}
-              <div className="client-main-content">
-                {/* 6-Month Maintenance Alert Banner */}
-                <div className="maintenance-alert-box" style={{ borderLeft: `5px solid ${maintStatus.color}` }}>
-                  <div className="maint-header">
-                    <Calendar size={24} style={{ color: maintStatus.color }} />
-                    <div>
-                      <h4>Próximo Mantenimiento Preventivo</h4>
-                      <p style={{ color: maintStatus.color, fontWeight: 'bold' }}>{maintStatus.label}</p>
-                    </div>
+              {/* Dashboard Main Area */}
+              <div className="dashboard-main">
+                <h2 className="section-title">Mis Equipos en Laboratorio</h2>
+                
+                {isLoadingTickets ? (
+                  <div className="glass-card text-center py-5"><div className="spinner"></div></div>
+                ) : clientTickets.length === 0 ? (
+                  <div className="glass-card empty-state">
+                    <ShieldCheck size={48} className="text-muted mb-3" />
+                    <h3>Sin reparaciones activas</h3>
+                    <p>Actualmente no tenés equipos en nuestro laboratorio.</p>
                   </div>
-                  <p className="maint-text mt-2 text-muted">
-                    {maintStatus.isOverdue 
-                      ? '⚠️ Tu equipo ya superó los 6 meses desde su última limpieza interna. Es sumamente importante realizar el mantenimiento preventivo para evitar sobrecalentamiento y daños permanentes.'
-                      : maintStatus.isSoon
-                        ? '⏳ Falta poco para los 6 meses de tu último mantenimiento. Te sugerimos ir reservando un turno técnico para la limpieza interna y cambio de pasta térmica.'
-                        : '✅ Tu equipo se encuentra en el rango de mantenimiento al día. Te avisaremos automáticamente cuando se cumplan los 6 meses.'}
-                  </p>
-                  {(maintStatus.isOverdue || maintStatus.isSoon) && (
-                    <a 
-                      href={`https://wa.me/${CONFIG.whatsappNumber}?text=Hola! Soy ${loggedClient.name} y me gustaría agendar un turno para el mantenimiento preventivo de mi equipo (${loggedClient.device}).`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary mt-2"
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                    >
-                      Solicitar Turno por WhatsApp
-                    </a>
-                  )}
-                </div>
-
-                {/* Repairs Tracking Section */}
-                <div className="client-repairs-card">
-                  <div className="card-header-tracking">
-                    <Wrench size={20} className="text-primary" />
-                    <h3>Estado de mis Reparaciones</h3>
-                  </div>
-
-                  {isLoadingTickets ? (
-                    <div className="text-center py-4">Cargando órdenes de servicio...</div>
-                  ) : clientTickets.length === 0 ? (
-                    <div className="empty-repairs-state">
-                      <Notebook size={32} className="text-muted" />
-                      <p>No tenés ninguna reparación activa registrada a tu nombre.</p>
-                      <p className="subtext">Si dejaste un equipo en laboratorio, asegurate de que tu nombre de registro coincida con el de la orden de servicio, o consultá usando el buscador público en <a href="/seguimiento">Seguimiento</a>.</p>
-                    </div>
-                  ) : (
-                    <div className="client-tickets-list">
-                      {clientTickets.map(ticket => (
-                        <div key={ticket.ticketId} className="client-ticket-item">
-                          <div className="ticket-item-header">
+                ) : (
+                  <div className="tickets-grid">
+                    {clientTickets.map(ticket => {
+                      const progress = ((ticket.currentStep - 1) / 5) * 100;
+                      const isDone = ticket.currentStep === 6;
+                      
+                      return (
+                        <motion.div whileHover={{ y: -5 }} key={ticket.ticketId} className="glass-card ticket-card">
+                          <div className="ticket-header">
                             <div>
-                              <strong>Orden: {ticket.ticketId}</strong>
-                              <span className="device-tag">{ticket.device}</span>
+                              <span className="badge badge-primary">{ticket.ticketId}</span>
+                              <h3 className="mt-2">{ticket.device}</h3>
                             </div>
-                            <span className="step-badge">Fase {ticket.currentStep}/6: {ticket.currentStep === 6 ? 'Entregado' : 'En laboratorio'}</span>
+                            <div className="ticket-status-icon">
+                              {isDone ? <CheckCircle2 size={24} className="text-success" /> : <Settings size={24} className="spin-slow text-primary" />}
+                            </div>
                           </div>
                           
-                          <div className="ticket-item-body mt-2">
-                            <p><strong>Ingreso:</strong> {ticket.entryDate} | <strong>Entrega Estimada:</strong> {ticket.estimatedDelivery}</p>
-                            <p className="mt-1"><strong>Diagnóstico inicial:</strong> {ticket.description}</p>
-                            {ticket.statusNotes && (
-                              <div className="ticket-notes mt-2">
-                                <strong>Nota técnica:</strong> {ticket.statusNotes}
-                              </div>
-                            )}
+                          <div className="ticket-progress-wrapper mt-4">
+                            <div className="progress-info">
+                              <span>Fase {ticket.currentStep}/6</span>
+                              <span>{isDone ? 'Completado' : 'En proceso'}</span>
+                            </div>
+                            <div className="progress-bar-glass">
+                              <motion.div 
+                                className={`progress-fill ${isDone ? 'bg-success' : 'bg-primary'}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 1, delay: 0.2 }}
+                              ></motion.div>
+                            </div>
                           </div>
                           
-                          <div className="ticket-progress-bar-container mt-3">
-                            <div className="progress-bar-labels">
-                              <span>Recibido</span>
-                              <span>Diagnóstico</span>
-                              <span>Listo</span>
+                          <div className="ticket-details mt-4">
+                            <div className="detail-row">
+                              <span className="label">Ingreso:</span>
+                              <span>{ticket.entryDate}</span>
                             </div>
-                            <div className="bar-bg">
-                              <div 
-                                className="bar-fill" 
-                                style={{ width: `${((ticket.currentStep - 1) / 5) * 100}%` }}
-                              ></div>
+                            <div className="detail-row">
+                              <span className="label">Entrega aprox:</span>
+                              <span className="text-primary font-bold">{ticket.estimatedDelivery}</span>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* Custom Offers & Equipment Change */}
-                <div className="client-marketing-offers-grid">
-                  <div className="marketing-promo-card">
-                    <Gift size={24} className="text-primary" />
-                    <h4>Oferta Especial</h4>
-                    <p>15% de descuento en la compra de tu disco SSD de 1TB para actualizar tu equipo.</p>
-                    <Link to="/tienda" className="link-action">Ver componentes en Tienda</Link>
+                          {isDone && (
+                            <div className="warranty-box mt-4">
+                              <ShieldCheck size={18} className="text-success" />
+                              <span>Garantía Activa por 90 días</span>
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
                   </div>
-
-                  <div className="marketing-promo-card">
-                    <RefreshCw size={24} className="text-primary" />
-                    <h4>Plan Canje Activo</h4>
-                    <p>Cotizá tu computadora usada para llevarte una Notebook HP Pavilion de última generación en cuotas.</p>
-                    <Link to="/cotizacion" className="link-action">Cotizar mi Canje</Link>
-                  </div>
-                </div>
-
+                )}
               </div>
             </motion.div>
           )}
