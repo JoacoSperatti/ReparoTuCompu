@@ -19,9 +19,12 @@ const Store = () => {
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [activeBrand, setActiveBrand] = useState("Todos");
   const [activeRam, setActiveRam] = useState("Todos");
+  const [activeProcessor, setActiveProcessor] = useState("Todos");
+  const [activeStorage, setActiveStorage] = useState("Todos");
+  const [activeGpu, setActiveGpu] = useState("Todos");
   const [activeCondition, setActiveCondition] = useState("Todos");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openFilters, setOpenFilters] = useState({ category: true, brand: true, ram: true, condition: true, price: true });
+  const [openFilters, setOpenFilters] = useState({ category: false, brand: false, processor: false, ram: false, storage: false, gpu: false, condition: false, price: false });
   const [searchTerm, setSearchTerm] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -50,7 +53,14 @@ const Store = () => {
     const loadProducts = async () => {
       try {
         const data = await getDbProducts();
-        setProducts(data);
+        const sanitizedData = data.map(p => {
+          let newRam = p.ram;
+          if (newRam && /^\d+$/.test(newRam.toString().trim())) {
+            newRam = newRam.toString().trim() + 'GB';
+          }
+          return { ...p, ram: newRam };
+        });
+        setProducts(sanitizedData);
       } catch (error) {
         console.error("Error loading products:", error);
       } finally {
@@ -74,7 +84,10 @@ const Store = () => {
 
   // Dynamic filter lists
   const availableBrands = ["Todos", ...new Set(products.filter(p => p.brand).map(p => p.brand))];
+  const availableProcessors = ["Todos", ...new Set(products.filter(p => p.processor).map(p => p.processor))];
   const availableRams = ["Todos", ...new Set(products.filter(p => p.ram).map(p => p.ram))];
+  const availableStorages = ["Todos", ...new Set(products.filter(p => p.storage).map(p => p.storage))];
+  const availableGpus = ["Todos", ...new Set(products.filter(p => p.gpu).map(p => p.gpu))];
   const availableConditions = ["Todos", ...new Set(products.filter(p => p.condition).map(p => p.condition))];
 
   const toggleFilter = (key) => setOpenFilters(prev => ({ ...prev, [key]: !prev[key] }));
@@ -83,7 +96,10 @@ const Store = () => {
   const handleClearFilters = () => {
     setActiveCategory("Todos");
     setActiveBrand("Todos");
+    setActiveProcessor("Todos");
     setActiveRam("Todos");
+    setActiveStorage("Todos");
+    setActiveGpu("Todos");
     setActiveCondition("Todos");
     setMinPrice("");
     setMaxPrice("");
@@ -163,7 +179,10 @@ const Store = () => {
     .filter(product => {
       const matchesCategory = activeCategory === "Todos" || (Array.isArray(product.category) ? product.category.includes(activeCategory) : product.category === activeCategory);
       const matchesBrand = activeBrand === "Todos" || product.brand === activeBrand;
+      const matchesProcessor = activeProcessor === "Todos" || product.processor === activeProcessor;
       const matchesRam = activeRam === "Todos" || product.ram === activeRam;
+      const matchesStorage = activeStorage === "Todos" || product.storage === activeStorage;
+      const matchesGpu = activeGpu === "Todos" || product.gpu === activeGpu;
       const matchesCondition = activeCondition === "Todos" || product.condition === activeCondition;
       const categoryString = Array.isArray(product.category) ? product.category.join(' ') : (product.category || "");
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -173,7 +192,7 @@ const Store = () => {
       const matchesMinPrice = minPrice === "" || priceArs >= Number(minPrice);
       const matchesMaxPrice = maxPrice === "" || priceArs <= Number(maxPrice);
 
-      return matchesCategory && matchesBrand && matchesRam && matchesCondition && matchesSearch && matchesMinPrice && matchesMaxPrice;
+      return matchesCategory && matchesBrand && matchesProcessor && matchesRam && matchesStorage && matchesGpu && matchesCondition && matchesSearch && matchesMinPrice && matchesMaxPrice;
     })
     .sort((a, b) => {
       if (sortBy === "price-asc") {
@@ -281,6 +300,102 @@ const Store = () => {
                             {activeBrand === b && <Check size={14} />}
                           </div>
                           <span className="filter-label">{b}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {availableProcessors.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('processor')} className="filter-section-title">
+                Procesador {openFilters.processor ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </h4>
+              <AnimatePresence>
+                {openFilters.processor && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableProcessors.map((p, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeProcessor === p ? 'active' : ''}`}
+                          onClick={() => { setActiveProcessor(p); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeProcessor === p && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{p}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {availableStorages.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('storage')} className="filter-section-title">
+                Almacenamiento {openFilters.storage ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </h4>
+              <AnimatePresence>
+                {openFilters.storage && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableStorages.map((s, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeStorage === s ? 'active' : ''}`}
+                          onClick={() => { setActiveStorage(s); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeStorage === s && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{s}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {availableGpus.length > 1 && (
+            <div className="filter-section" style={{ marginTop: '1.5rem' }}>
+              <h4 onClick={() => toggleFilter('gpu')} className="filter-section-title">
+                Placa de Video {openFilters.gpu ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </h4>
+              <AnimatePresence>
+                {openFilters.gpu && (
+                  <motion.ul 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="category-list"
+                  >
+                    {availableGpus.map((g, index) => (
+                      <li key={index}>
+                        <button 
+                          className={`custom-filter-item ${activeGpu === g ? 'active' : ''}`}
+                          onClick={() => { setActiveGpu(g); setIsSidebarOpen(false); }}
+                        >
+                          <div className="filter-checkbox">
+                            {activeGpu === g && <Check size={14} />}
+                          </div>
+                          <span className="filter-label">{g}</span>
                         </button>
                       </li>
                     ))}

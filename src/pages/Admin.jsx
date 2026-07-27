@@ -205,6 +205,9 @@ const Admin = () => {
   const [prodCurrency, setProdCurrency] = useState('ARS');
   const [prodBrand, setProdBrand] = useState('');
   const [prodRam, setProdRam] = useState('');
+  const [prodProcessor, setProdProcessor] = useState('');
+  const [prodStorage, setProdStorage] = useState('');
+  const [prodGpu, setProdGpu] = useState('');
 
   // Editor states (Tracking)
   const [isTicketFormOpen, setIsTicketFormOpen] = useState(false);
@@ -295,7 +298,11 @@ const Admin = () => {
     setProdCurrency('ARS');
     setProdBrand('');
     setProdRam('');
+    setProdProcessor('');
+    setProdStorage('');
+    setProdGpu('');
     setIsProductFormOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openEditProduct = (prod) => {
@@ -316,7 +323,11 @@ const Admin = () => {
     setProdCurrency(prod.currency || 'ARS');
     setProdBrand(prod.brand || '');
     setProdRam(prod.ram || '');
+    setProdProcessor(prod.processor || '');
+    setProdStorage(prod.storage || '');
+    setProdGpu(prod.gpu || '');
     setIsProductFormOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleProductSubmit = async (e) => {
@@ -340,7 +351,10 @@ const Admin = () => {
       extraPrice: Number(prodExtraPrice) || 0,
       currency: prodCurrency,
       brand: prodBrand,
-      ram: prodRam
+      ram: prodRam,
+      processor: prodProcessor,
+      storage: prodStorage,
+      gpu: prodGpu
     };
 
     if (editingProduct) {
@@ -979,6 +993,36 @@ const Admin = () => {
                                 value={prodRam} 
                                 onChange={(e) => setProdRam(e.target.value)} 
                                 placeholder="Ej. 8GB, 16GB" 
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="form-row-admin">
+                            <div className="form-group-admin">
+                              <label>Procesador (Filtro)</label>
+                              <input 
+                                type="text" 
+                                value={prodProcessor} 
+                                onChange={(e) => setProdProcessor(e.target.value)} 
+                                placeholder="Ej. Intel Core i5, AMD Ryzen 5" 
+                              />
+                            </div>
+                            <div className="form-group-admin">
+                              <label>Almacenamiento (Filtro)</label>
+                              <input 
+                                type="text" 
+                                value={prodStorage} 
+                                onChange={(e) => setProdStorage(e.target.value)} 
+                                placeholder="Ej. 500GB SSD, 1TB HDD" 
+                              />
+                            </div>
+                            <div className="form-group-admin">
+                              <label>Placa de Video (Filtro)</label>
+                              <input 
+                                type="text" 
+                                value={prodGpu} 
+                                onChange={(e) => setProdGpu(e.target.value)} 
+                                placeholder="Ej. Integrada, RTX 3060" 
                               />
                             </div>
                           </div>

@@ -17,8 +17,28 @@
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   height: fit-content;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
   position: sticky;
   top: 6rem;
+}
+
+/* Scrollbar styles for store sidebar */
+.store-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.store-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.store-sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.store-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .sidebar-header {
