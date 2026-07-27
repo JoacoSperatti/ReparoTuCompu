@@ -197,7 +197,7 @@ const Store = () => {
         <meta property="og:type" content="website" />
       </Helmet>
 
-      <div className="store-layout container">
+      <div className="store-layout">
         
         {/* Categories Sidebar */}
         <aside className={`store-sidebar ${isSidebarOpen ? 'open' : ''}`}>

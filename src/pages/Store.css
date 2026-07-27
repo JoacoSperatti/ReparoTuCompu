@@ -1,9 +1,12 @@
-.store-layout.container {
+.store-layout {
   display: flex;
   gap: 2.5rem;
   padding-top: 4rem;
   padding-bottom: 8rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   position: relative;
+  width: 100%;
 }
 
 .store-sidebar {
